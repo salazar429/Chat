@@ -1,10 +1,19 @@
 const jsonServer = require('json-server');
 const path = require('path');
 const express = require('express');
+const fs = require('fs');
 
 const server = express();
 const router = jsonServer.router(path.join(__dirname, 'database.json'));
 const middlewares = jsonServer.defaults();
+
+// Habilitar CORS para GitHub Pages
+server.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+});
 
 // Servir archivos estáticos
 server.use(express.static(path.join(__dirname, 'public')));
@@ -24,7 +33,7 @@ server.use((req, res, next) => {
 
 // ============ ENDPOINTS PERSONALIZADOS ============
 
-// Endpoint para matches (EVITAR DUPLICADOS)
+// Endpoint para matches
 server.get('/api/matches', (req, res) => {
     const db = router.db;
     let matches = db.get('matches').value();
@@ -35,7 +44,6 @@ server.get('/api/matches', (req, res) => {
         );
     }
     
-    // ELIMINAR DUPLICADOS
     const uniqueMatches = [];
     const matchKeys = new Set();
     
@@ -87,36 +95,31 @@ server.get('/api/messages', (req, res) => {
     res.json(messages);
 });
 
-// Endpoint para crear like y verificar match (EVITAR DUPLICADOS)
+// Endpoint para crear like y verificar match
 server.post('/api/likes', (req, res) => {
     const db = router.db;
     const like = req.body;
     
-    // Verificar si ya existe este like
     const existingLike = db.get('likes')
         .find(l => l.userId === like.userId && l.targetUserId === like.targetUserId)
         .value();
     
     if (!existingLike) {
-        // Guardar like
         db.get('likes').push(like).write();
     }
     
-    // Verificar si hay like recíproco
     const reciprocalLike = db.get('likes')
         .find(l => l.userId === like.targetUserId && l.targetUserId === like.userId)
         .value();
     
     let match = null;
     if (reciprocalLike) {
-        // Verificar si el match ya existe
         const matchKey = [like.userId, like.targetUserId].sort().join('-');
         const existingMatch = db.get('matches')
             .find(m => m.users.sort().join('-') === matchKey)
             .value();
         
         if (!existingMatch) {
-            // Crear match
             match = {
                 id: Date.now().toString(),
                 users: [like.userId, like.targetUserId],
@@ -129,6 +132,23 @@ server.post('/api/likes', (req, res) => {
     }
     
     res.json({ like, match });
+});
+
+// Endpoint para verificar código de referido
+server.get('/api/verify-referral', (req, res) => {
+    const { code } = req.query;
+    
+    if (code === 'qwerty') {
+        return res.json({ valid: true, isTestCode: true });
+    }
+    
+    const db = router.db;
+    const user = db.get('users').find({ referralCode: code }).value();
+    
+    res.json({ 
+        valid: !!user, 
+        referrerId: user ? user.id : null 
+    });
 });
 
 // Usar las rutas de la API con prefijo /api
