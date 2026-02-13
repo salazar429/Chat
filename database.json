@@ -1,0 +1,44 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Ana García",
+      "email": "ana@email.com",
+      "password": "123456",
+      "photo": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+      "online": true,
+      "createdAt": "2026-02-13T00:00:00.000Z"
+    },
+    {
+      "id": "2",
+      "name": "Carlos López",
+      "email": "carlos@email.com",
+      "password": "123456",
+      "photo": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
+      "online": true,
+      "createdAt": "2026-02-13T00:00:00.000Z"
+    },
+    {
+      "id": "3",
+      "name": "María Rodríguez",
+      "email": "maria@email.com",
+      "password": "123456",
+      "photo": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
+      "online": false,
+      "createdAt": "2026-02-13T00:00:00.000Z"
+    },
+    {
+      "id": "4",
+      "name": "Javier Martínez",
+      "email": "javier@email.com",
+      "password": "123456",
+      "photo": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
+      "online": true,
+      "createdAt": "2026-02-13T00:00:00.000Z"
+    }
+  ],
+  "likes": [],
+  "matches": [],
+  "messages": [],
+  "posts": []
+}
