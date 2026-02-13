@@ -7,6 +7,9 @@
       "password": "123456",
       "photo": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
       "online": false,
+      "referralCode": "ana1234",
+      "referredBy": null,
+      "referrals": [],
       "createdAt": "2026-02-13T00:00:00.000Z"
     },
     {
@@ -16,6 +19,9 @@
       "password": "123456",
       "photo": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400",
       "online": false,
+      "referralCode": "carlos5678",
+      "referredBy": null,
+      "referrals": [],
       "createdAt": "2026-02-13T00:00:00.000Z"
     },
     {
@@ -25,6 +31,9 @@
       "password": "123456",
       "photo": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400",
       "online": false,
+      "referralCode": "maria9012",
+      "referredBy": null,
+      "referrals": [],
       "createdAt": "2026-02-13T00:00:00.000Z"
     },
     {
@@ -34,6 +43,9 @@
       "password": "123456",
       "photo": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400",
       "online": false,
+      "referralCode": "javier3456",
+      "referredBy": null,
+      "referrals": [],
       "createdAt": "2026-02-13T00:00:00.000Z"
     }
   ],
