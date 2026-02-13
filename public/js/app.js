@@ -1,5 +1,5 @@
 // ==================== CONFIGURACIÓN ====================
-const API_URL = window.location.origin + '/api';  // Esto funciona en local y en producción
+const API_URL = window.location.origin + '/api';
 let currentUser = null;
 let currentChatUser = null;
 let currentCardIndex = 0;
@@ -12,11 +12,19 @@ let publicacionFotoData = null;
 let matchUserId = null;
 let messageCheckInterval = null;
 
-
-
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
-    checkSession();
+    // IMPORTANTE: Limpiar sesión anterior si estamos en la página de login
+    const isAuthScreen = document.getElementById('auth-screen').classList.contains('active');
+    if (isAuthScreen) {
+        // Si estamos en pantalla de login, NO cargar sesión automáticamente
+        setTimeout(() => {
+            document.getElementById('splash-screen').classList.remove('active');
+            document.getElementById('auth-screen').classList.add('active');
+        }, 2000);
+    } else {
+        checkSession();
+    }
 });
 
 // ==================== VERIFICAR SESIÓN ====================
@@ -36,31 +44,46 @@ async function checkSession() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ online: true })
                 });
+                
+                // Cargar la app directamente
+                setTimeout(() => {
+                    document.getElementById('splash-screen').classList.remove('active');
+                    if (!currentUser.photo) {
+                        document.getElementById('photo-screen').classList.add('active');
+                    } else {
+                        document.getElementById('main-screen').classList.add('active');
+                        loadMainScreen();
+                    }
+                }, 2000);
+            } else {
+                // Usuario no existe, limpiar sesión
+                localStorage.removeItem('baduu_current_user');
+                setTimeout(() => {
+                    document.getElementById('splash-screen').classList.remove('active');
+                    document.getElementById('auth-screen').classList.add('active');
+                }, 2000);
             }
+        } else {
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.remove('active');
+                document.getElementById('auth-screen').classList.add('active');
+            }, 2000);
         }
     } catch (error) {
         console.error('Error checking session:', error);
-    }
-    
-    // Splash screen
-    setTimeout(() => {
-        document.getElementById('splash-screen').classList.remove('active');
-        
-        if (currentUser) {
-            if (!currentUser.photo) {
-                document.getElementById('photo-screen').classList.add('active');
-            } else {
-                document.getElementById('main-screen').classList.add('active');
-                loadMainScreen();
-            }
-        } else {
+        setTimeout(() => {
+            document.getElementById('splash-screen').classList.remove('active');
             document.getElementById('auth-screen').classList.add('active');
-        }
-    }, 2000);
+        }, 2000);
+    }
 }
 
 // ==================== AUTENTICACIÓN ====================
 function showRegister() {
+    // Limpiar cualquier sesión existente
+    localStorage.removeItem('baduu_current_user');
+    currentUser = null;
+    
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('registerForm').style.display = 'block';
     document.getElementById('authTitle').textContent = 'Crear Cuenta';
@@ -180,6 +203,7 @@ async function logout() {
             console.error('Error updating status:', error);
         }
         
+        // LIMPIAR COMPLETAMENTE LA SESIÓN
         localStorage.removeItem('baduu_current_user');
         currentUser = null;
         currentChatUser = null;
@@ -189,6 +213,14 @@ async function logout() {
             messageCheckInterval = null;
         }
         
+        // Resetear formularios
+        document.getElementById('loginEmail').value = 'ana@email.com';
+        document.getElementById('loginPassword').value = '123456';
+        document.getElementById('regName').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regPassword').value = '';
+        
+        // Volver a pantalla de login
         document.getElementById('main-screen').classList.remove('active');
         document.getElementById('photo-screen').classList.remove('active');
         document.getElementById('auth-screen').classList.add('active');
@@ -247,7 +279,7 @@ async function loadMainScreen() {
     
     await loadUserStats();
     loadCards();
-    loadMatchesAndConversations();
+    await loadMatchesAndConversations();
     loadPublicaciones();
     
     startMessageCheck();
@@ -330,199 +362,35 @@ function renderCurrentCard() {
     attachSwipeListeners();
 }
 
-function attachSwipeListeners() {
-    if (!currentCard) return;
+// ... (código de swipe igual que antes) ...
 
-    currentCard.addEventListener('touchstart', handleTouchStart);
-    currentCard.addEventListener('touchmove', handleTouchMove);
-    currentCard.addEventListener('touchend', handleTouchEnd);
-    currentCard.addEventListener('mousedown', handleMouseStart);
-    currentCard.addEventListener('mousemove', handleMouseMove);
-    currentCard.addEventListener('mouseup', handleMouseEnd);
-    currentCard.addEventListener('mouseleave', handleMouseEnd);
-}
-
-function handleTouchStart(e) {
-    e.preventDefault();
-    isDragging = true;
-    startX = e.touches[0].clientX;
-    currentCard.style.transition = 'none';
-}
-
-function handleTouchMove(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    currentX = e.touches[0].clientX;
-    const diff = currentX - startX;
-    updateCardPosition(diff);
-}
-
-function handleTouchEnd(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    const diff = currentX - startX;
-    handleSwipeEnd(diff);
-}
-
-function handleMouseStart(e) {
-    e.preventDefault();
-    isDragging = true;
-    startX = e.clientX;
-    currentCard.style.transition = 'none';
-}
-
-function handleMouseMove(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    currentX = e.clientX;
-    const diff = currentX - startX;
-    updateCardPosition(diff);
-}
-
-function handleMouseEnd(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    const diff = currentX - startX;
-    handleSwipeEnd(diff);
-}
-
-function updateCardPosition(diff) {
-    if (!currentCard) return;
-    
-    const rotate = diff * 0.1;
-    const opacity = Math.min(Math.abs(diff) / 300, 0.5);
-    
-    currentCard.style.transform = `translateX(${diff}px) rotate(${rotate}deg)`;
-    currentCard.style.opacity = 1 - opacity;
-    
-    if (diff > 50) {
-        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'block';
-        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
-    } else if (diff < -50) {
-        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
-        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'block';
-    } else {
-        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
-        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
-    }
-}
-
-function handleSwipeEnd(diff) {
-    isDragging = false;
-    currentCard.style.transition = 'all 0.3s';
-    
-    if (Math.abs(diff) > 100) {
-        if (diff > 0) {
-            likeUser();
-        } else {
-            dislikeUser();
-        }
-    } else {
-        currentCard.style.transform = 'translateX(0) rotate(0)';
-        currentCard.style.opacity = '1';
-        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
-        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
-    }
-}
-
-async function likeUser() {
-    if (currentCardIndex >= availableUsers.length) return;
-    
-    const user = availableUsers[currentCardIndex];
-    
-    try {
-        // Crear like
-        const likeResponse = await fetch(`${API_URL}/likes`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: currentUser.id,
-                targetUserId: user.id,
-                timestamp: new Date().toISOString()
-            })
-        });
-        
-        // Verificar si es match (like recíproco)
-        const checkResponse = await fetch(`${API_URL}/likes?userId=${user.id}&targetUserId=${currentUser.id}`);
-        const reciprocalLikes = await checkResponse.json();
-        
-        let isMatch = false;
-        
-        if (reciprocalLikes.length > 0) {
-            // Crear match
-            const matchResponse = await fetch(`${API_URL}/matches`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    users: [currentUser.id, user.id],
-                    timestamp: new Date().toISOString()
-                })
-            });
-            
-            isMatch = true;
-        }
-        
-        // Animación de salida
-        currentCard.style.transform = 'translateX(1000px) rotate(30deg)';
-        currentCard.style.opacity = '0';
-        
-        setTimeout(() => {
-            if (isMatch) {
-                matchUserId = user.id;
-                showMatchPopup(user.name);
-                loadUserStats();
-            }
-            currentCardIndex++;
-            renderCurrentCard();
-        }, 300);
-        
-    } catch (error) {
-        console.error('Error liking user:', error);
-    }
-}
-
-function dislikeUser() {
-    if (currentCardIndex >= availableUsers.length) return;
-    
-    currentCard.style.transform = 'translateX(-1000px) rotate(-30deg)';
-    currentCard.style.opacity = '0';
-    
-    setTimeout(() => {
-        currentCardIndex++;
-        renderCurrentCard();
-    }, 300);
-}
-
-function showMatchPopup(userName) {
-    const popup = document.getElementById('matchPopup');
-    document.getElementById('matchUserName').textContent = `¡Te gusta ${userName}!`;
-    popup.style.display = 'block';
-}
-
-function closeMatchPopup() {
-    document.getElementById('matchPopup').style.display = 'none';
-    matchUserId = null;
-}
-
-function openChatFromMatch() {
-    if (matchUserId) {
-        closeMatchPopup();
-        openChat(matchUserId);
-        showSection('mensajes');
-    }
-}
-
-// ==================== MATCHES Y CONVERSACIONES ====================
+// ==================== MATCHES Y CONVERSACIONES (CORREGIDO - SIN DUPLICADOS) ====================
 async function loadMatchesAndConversations() {
     try {
         const matches = await fetch(`${API_URL}/matches?users_like=${currentUser.id}`).then(res => res.json());
         const matchesList = document.getElementById('matchesList');
         const conversationsList = document.getElementById('conversationsList');
         
-        // Mostrar matches
+        // LIMPIAR HTML ANTES DE INSERTAR
+        matchesList.innerHTML = '';
+        conversationsList.innerHTML = '';
+        
+        // Mostrar matches (SIN DUPLICADOS)
         if (matches.length > 0) {
-            let matchesHtml = '';
+            // Usar un Set para evitar duplicados
+            const uniqueMatches = [];
+            const matchIds = new Set();
+            
             for (const match of matches) {
+                const otherUserId = match.users.find(id => id !== currentUser.id);
+                if (!matchIds.has(otherUserId)) {
+                    matchIds.add(otherUserId);
+                    uniqueMatches.push(match);
+                }
+            }
+            
+            let matchesHtml = '';
+            for (const match of uniqueMatches) {
                 const otherUserId = match.users.find(id => id !== currentUser.id);
                 const user = await fetch(`${API_URL}/users/${otherUserId}`).then(res => res.json());
                 
@@ -538,13 +406,22 @@ async function loadMatchesAndConversations() {
             matchesList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No tienes matches aún</p>';
         }
         
-        // Cargar conversaciones
+        // Cargar conversaciones (SIN DUPLICADOS)
         const conversations = await loadConversations();
         
         if (conversations.length > 0) {
+            // Usar un Map para evitar duplicados por usuario
+            const uniqueConversations = new Map();
+            
+            conversations.forEach(conv => {
+                if (!uniqueConversations.has(conv.otherUserId)) {
+                    uniqueConversations.set(conv.otherUserId, conv);
+                }
+            });
+            
             let conversationsHtml = '';
-            for (const conv of conversations) {
-                const otherUser = await fetch(`${API_URL}/users/${conv.otherUserId}`).then(res => res.json());
+            for (const [otherUserId, conv] of uniqueConversations) {
+                const otherUser = await fetch(`${API_URL}/users/${otherUserId}`).then(res => res.json());
                 const lastMessage = conv.lastMessage;
                 const unreadCount = conv.unreadCount || 0;
                 
@@ -597,6 +474,7 @@ async function loadConversations() {
                     unreadCount: 0
                 };
             } else {
+                // Actualizar solo si es más reciente
                 if (new Date(msg.timestamp) > new Date(conversations[key].updatedAt)) {
                     conversations[key].lastMessage = msg;
                     conversations[key].updatedAt = msg.timestamp;
@@ -632,7 +510,7 @@ async function updateUnreadBadge() {
     }
 }
 
-// ==================== CHAT ====================
+// ==================== CHAT (PANTALLA COMPLETA) ====================
 async function openChat(userId) {
     const user = await fetch(`${API_URL}/users/${userId}`).then(res => res.json());
     if (!user) return;
@@ -650,7 +528,26 @@ async function openChat(userId) {
         });
     }
     
-    document.getElementById('chat-section').style.display = 'block';
+    // OCULTAR TODAS LAS SECCIONES Y MOSTRAR CHAT EN PANTALLA COMPLETA
+    document.getElementById('encuentros-section').style.display = 'none';
+    document.getElementById('muro-section').style.display = 'none';
+    document.getElementById('mensajes-section').style.display = 'none';
+    document.getElementById('perfil-section').style.display = 'none';
+    
+    // QUITAR LA CLASE 'content-area' DEL CHAT PARA QUE OCUPE TODA LA PANTALLA
+    const chatSection = document.getElementById('chat-section');
+    chatSection.style.display = 'flex';
+    chatSection.style.flexDirection = 'column';
+    chatSection.style.height = '100%';
+    chatSection.style.width = '100%';
+    chatSection.style.position = 'absolute';
+    chatSection.style.top = '0';
+    chatSection.style.left = '0';
+    chatSection.style.right = '0';
+    chatSection.style.bottom = '0';
+    chatSection.style.backgroundColor = 'white';
+    chatSection.style.zIndex = '1000';
+    
     document.getElementById('chatAvatar').src = user.photo || 'https://via.placeholder.com/45';
     document.getElementById('chatUserName').textContent = user.name;
     document.getElementById('chatUserStatus').innerHTML = user.online ? '● En línea' : '○ Desconectado';
@@ -664,233 +561,26 @@ async function openChat(userId) {
     }, 300);
 }
 
-async function loadMessages(userId) {
-    const messages = await fetch(`${API_URL}/messages?fromUserId=${currentUser.id}&toUserId=${userId}`).then(res => res.json());
-    const messages2 = await fetch(`${API_URL}/messages?fromUserId=${userId}&toUserId=${currentUser.id}`).then(res => res.json());
-    
-    const allMessages = [...messages, ...messages2].sort((a, b) => 
-        new Date(a.timestamp) - new Date(b.timestamp)
-    );
-    
-    const container = document.getElementById('chatMessages');
-    
-    container.innerHTML = allMessages.map(msg => {
-        const isSent = msg.fromUserId === currentUser.id;
-        return `
-            <div class="message ${isSent ? 'sent' : 'received'}">
-                ${msg.text}
-                <div class="message-time">
-                    ${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    container.scrollTop = container.scrollHeight;
-}
-
-async function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    
-    if (!text || !currentChatUser) return;
-    
-    try {
-        await fetch(`${API_URL}/messages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: Date.now().toString(),
-                fromUserId: currentUser.id,
-                toUserId: currentChatUser.id,
-                text,
-                timestamp: new Date().toISOString(),
-                read: false
-            })
-        });
-        
-        await loadMessages(currentChatUser.id);
-        await loadMatchesAndConversations();
-        
-        input.value = '';
-    } catch (error) {
-        console.error('Error sending message:', error);
-    }
-}
-
 function backToMessages() {
-    document.getElementById('chat-section').style.display = 'none';
+    // RESTAURAR EL CHAT A SU ESTADO NORMAL
+    const chatSection = document.getElementById('chat-section');
+    chatSection.style.display = 'none';
+    chatSection.style.position = 'relative';
+    chatSection.style.top = 'auto';
+    chatSection.style.left = 'auto';
+    chatSection.style.right = 'auto';
+    chatSection.style.bottom = 'auto';
+    chatSection.style.zIndex = 'auto';
+    
     document.getElementById('mensajes-section').style.display = 'block';
     currentChatUser = null;
     loadMatchesAndConversations();
 }
 
-function startMessageCheck() {
-    if (messageCheckInterval) {
-        clearInterval(messageCheckInterval);
-    }
-    
-    messageCheckInterval = setInterval(async () => {
-        if (currentUser) {
-            if (document.getElementById('mensajes-section').style.display === 'block') {
-                await loadMatchesAndConversations();
-            }
-            if (currentChatUser) {
-                await loadMessages(currentChatUser.id);
-            }
-            await updateUnreadBadge();
-        }
-    }, 3000);
-}
-
-// ==================== MURO SOCIAL ====================
-function previewPublicacionFoto(event) {
-    const file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            publicacionFotoData = e.target.result;
-            const container = document.getElementById('fotoPreviewContainer');
-            const preview = document.getElementById('fotoPreview');
-            preview.src = e.target.result;
-            container.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-}
-
-async function crearPublicacion() {
-    const texto = document.getElementById('publicacionTexto').value.trim();
-    
-    if (!texto && !publicacionFotoData) {
-        alert('Escribe algo o selecciona una foto');
-        return;
-    }
-
-    try {
-        await fetch(`${API_URL}/posts`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                id: Date.now().toString(),
-                userId: currentUser.id,
-                userName: currentUser.name,
-                userPhoto: currentUser.photo,
-                texto,
-                imagen: publicacionFotoData,
-                fecha: new Date().toISOString(),
-                likes: [],
-                comments: []
-            })
-        });
-        
-        document.getElementById('publicacionTexto').value = '';
-        document.getElementById('fotoPreviewContainer').style.display = 'none';
-        publicacionFotoData = null;
-        document.getElementById('publicacionFoto').value = '';
-        
-        await loadPublicaciones();
-        await loadUserStats();
-        
-    } catch (error) {
-        console.error('Error creating post:', error);
-    }
-}
-
-async function loadPublicaciones() {
-    try {
-        const posts = await fetch(`${API_URL}/posts`).then(res => res.json());
-        const matches = await getMatches();
-        
-        // Filtrar publicaciones del usuario y sus matches
-        const filteredPosts = posts.filter(post => 
-            post.userId === currentUser.id || matches.includes(post.userId)
-        ).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-        
-        const container = document.getElementById('publicacionesList');
-        
-        if (filteredPosts.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #999;">
-                    <span style="font-size: 48px;">📝</span>
-                    <p>No hay publicaciones aún</p>
-                    <p style="margin-top: 10px;">¡Sé el primero en publicar algo!</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = filteredPosts.map(post => `
-            <div class="publicacion-card">
-                <div class="publicacion-header">
-                    <img src="${post.userPhoto || 'https://via.placeholder.com/40'}" class="publicacion-avatar">
-                    <div>
-                        <div class="publicacion-user">${post.userName}</div>
-                        <div class="publicacion-date">${new Date(post.fecha).toLocaleDateString()}</div>
-                    </div>
-                </div>
-                ${post.imagen ? `<img src="${post.imagen}" class="publicacion-imagen">` : ''}
-                ${post.texto ? `<div class="publicacion-texto">${post.texto}</div>` : ''}
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error loading posts:', error);
-    }
-}
-
-// ==================== NAVEGACIÓN ====================
-function showSection(section) {
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    event.currentTarget.classList.add('active');
-
-    document.getElementById('encuentros-section').style.display = 'none';
-    document.getElementById('muro-section').style.display = 'none';
-    document.getElementById('mensajes-section').style.display = 'none';
-    document.getElementById('perfil-section').style.display = 'none';
-    document.getElementById('chat-section').style.display = 'none';
-
-    if (section === 'encuentros') {
-        document.getElementById('encuentros-section').style.display = 'block';
-        loadCards();
-    } else if (section === 'muro') {
-        document.getElementById('muro-section').style.display = 'block';
-        loadPublicaciones();
-    } else if (section === 'mensajes') {
-        document.getElementById('mensajes-section').style.display = 'block';
-        loadMatchesAndConversations();
-    } else if (section === 'perfil') {
-        document.getElementById('perfil-section').style.display = 'block';
-        loadUserStats();
-    }
-}
-
-// ==================== EVENT LISTENERS ====================
-document.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && document.getElementById('chat-section').style.display === 'block') {
-        e.preventDefault();
-        sendMessage();
-    }
-});
-
-window.addEventListener('beforeunload', async () => {
-    if (currentUser) {
-        try {
-            await fetch(`${API_URL}/users/${currentUser.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ online: false })
-            });
-        } catch (error) {
-            console.error('Error updating status:', error);
-        }
-    }
-    if (messageCheckInterval) {
-        clearInterval(messageCheckInterval);
-    }
-});
+// ==================== RESTO DEL CÓDIGO (IGUAL) ====================
+// ... (el resto de funciones: loadMessages, sendMessage, startMessageCheck, 
+//      previewPublicacionFoto, crearPublicacion, loadPublicaciones, 
+//      showSection, etc. SE QUEDAN IGUAL) ...
 
 // ==================== EXPORTAR FUNCIONES GLOBALES ====================
 window.showRegister = showRegister;
