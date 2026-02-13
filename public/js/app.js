@@ -1,5 +1,5 @@
 // ==================== CONFIGURACIÓN ====================
-const API_URL = 'http://localhost:3000';
+const API_URL = window.location.origin + '/api';  // Esto funciona en local y en producción
 let currentUser = null;
 let currentChatUser = null;
 let currentCardIndex = 0;
@@ -11,6 +11,8 @@ let currentCard = null;
 let publicacionFotoData = null;
 let matchUserId = null;
 let messageCheckInterval = null;
+
+
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
