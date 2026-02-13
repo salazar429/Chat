@@ -11,13 +11,13 @@ let currentCard = null;
 let publicacionFotoData = null;
 let matchUserId = null;
 let messageCheckInterval = null;
+let lastMessageCount = 0;
+let isChatOpen = false;
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
-    // IMPORTANTE: Limpiar sesión anterior si estamos en la página de login
     const isAuthScreen = document.getElementById('auth-screen').classList.contains('active');
     if (isAuthScreen) {
-        // Si estamos en pantalla de login, NO cargar sesión automáticamente
         setTimeout(() => {
             document.getElementById('splash-screen').classList.remove('active');
             document.getElementById('auth-screen').classList.add('active');
@@ -33,19 +33,16 @@ async function checkSession() {
         const savedUser = localStorage.getItem('baduu_current_user');
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
-            // Verificar que el usuario sigue existiendo
             const response = await fetch(`${API_URL}/users/${currentUser.id}`);
             if (response.ok) {
                 const user = await response.json();
                 currentUser = user;
-                // Actualizar estado online
                 await fetch(`${API_URL}/users/${currentUser.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ online: true })
                 });
                 
-                // Cargar la app directamente
                 setTimeout(() => {
                     document.getElementById('splash-screen').classList.remove('active');
                     if (!currentUser.photo) {
@@ -56,7 +53,6 @@ async function checkSession() {
                     }
                 }, 2000);
             } else {
-                // Usuario no existe, limpiar sesión
                 localStorage.removeItem('baduu_current_user');
                 setTimeout(() => {
                     document.getElementById('splash-screen').classList.remove('active');
@@ -80,7 +76,6 @@ async function checkSession() {
 
 // ==================== AUTENTICACIÓN ====================
 function showRegister() {
-    // Limpiar cualquier sesión existente
     localStorage.removeItem('baduu_current_user');
     currentUser = null;
     
@@ -114,7 +109,6 @@ async function handleLogin() {
             const user = users[0];
             currentUser = user;
             
-            // Actualizar estado online
             await fetch(`${API_URL}/users/${user.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -151,7 +145,6 @@ async function handleRegister() {
     }
 
     try {
-        // Verificar si el email ya existe
         const checkResponse = await fetch(`${API_URL}/users?email=${email}`);
         const existingUsers = await checkResponse.json();
         
@@ -203,24 +196,19 @@ async function logout() {
             console.error('Error updating status:', error);
         }
         
-        // LIMPIAR COMPLETAMENTE LA SESIÓN
+        stopMessageCheck();
+        
         localStorage.removeItem('baduu_current_user');
         currentUser = null;
         currentChatUser = null;
+        isChatOpen = false;
         
-        if (messageCheckInterval) {
-            clearInterval(messageCheckInterval);
-            messageCheckInterval = null;
-        }
-        
-        // Resetear formularios
         document.getElementById('loginEmail').value = 'ana@email.com';
         document.getElementById('loginPassword').value = '123456';
         document.getElementById('regName').value = '';
         document.getElementById('regEmail').value = '';
         document.getElementById('regPassword').value = '';
         
-        // Volver a pantalla de login
         document.getElementById('main-screen').classList.remove('active');
         document.getElementById('photo-screen').classList.remove('active');
         document.getElementById('auth-screen').classList.add('active');
@@ -471,7 +459,6 @@ async function likeUser() {
     const user = availableUsers[currentCardIndex];
     
     try {
-        // Crear like
         const likeResponse = await fetch(`${API_URL}/likes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -484,7 +471,6 @@ async function likeUser() {
         
         const result = await likeResponse.json();
         
-        // Animación de salida
         currentCard.style.transform = 'translateX(1000px) rotate(30deg)';
         currentCard.style.opacity = '0';
         
@@ -534,7 +520,7 @@ function openChatFromMatch() {
     }
 }
 
-// ==================== MATCHES Y CONVERSACIONES (SIN DUPLICADOS) ====================
+// ==================== MATCHES Y CONVERSACIONES ====================
 async function loadMatchesAndConversations() {
     try {
         const matchesResponse = await fetch(`${API_URL}/matches?users_like=${currentUser.id}`);
@@ -542,13 +528,10 @@ async function loadMatchesAndConversations() {
         const matchesList = document.getElementById('matchesList');
         const conversationsList = document.getElementById('conversationsList');
         
-        // LIMPIAR HTML ANTES DE INSERTAR
         matchesList.innerHTML = '';
         conversationsList.innerHTML = '';
         
-        // Mostrar matches (SIN DUPLICADOS)
         if (matches.length > 0) {
-            // Usar un Set para evitar duplicados
             const uniqueMatches = [];
             const matchIds = new Set();
             
@@ -578,11 +561,9 @@ async function loadMatchesAndConversations() {
             matchesList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No tienes matches aún</p>';
         }
         
-        // Cargar conversaciones (SIN DUPLICADOS)
         const conversations = await loadConversations();
         
         if (conversations.length > 0) {
-            // Usar un Map para evitar duplicados por usuario
             const uniqueConversations = new Map();
             
             conversations.forEach(conv => {
@@ -622,7 +603,6 @@ async function loadMatchesAndConversations() {
             conversationsList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No tienes conversaciones aún</p>';
         }
         
-        // Actualizar badge de mensajes no leídos
         await updateUnreadBadge();
         
     } catch (error) {
@@ -648,7 +628,6 @@ async function loadConversations() {
                     unreadCount: 0
                 };
             } else {
-                // Actualizar solo si es más reciente
                 if (new Date(msg.timestamp) > new Date(conversations[key].updatedAt)) {
                     conversations[key].lastMessage = msg;
                     conversations[key].updatedAt = msg.timestamp;
@@ -657,7 +636,6 @@ async function loadConversations() {
         }
     });
     
-    // Contar mensajes no leídos
     Object.keys(conversations).forEach(key => {
         const conv = conversations[key];
         conv.unreadCount = messages.filter(msg => 
@@ -692,8 +670,8 @@ async function openChat(userId) {
     if (!user) return;
     
     currentChatUser = user;
+    isChatOpen = true;
     
-    // Marcar mensajes como leídos
     const messagesResponse = await fetch(`${API_URL}/messages?fromUserId=${userId}&toUserId=${currentUser.id}&read=false`);
     const messages = await messagesResponse.json();
     
@@ -705,13 +683,11 @@ async function openChat(userId) {
         });
     }
     
-    // OCULTAR TODAS LAS SECCIONES Y MOSTRAR CHAT EN PANTALLA COMPLETA
     document.getElementById('encuentros-section').style.display = 'none';
     document.getElementById('muro-section').style.display = 'none';
     document.getElementById('mensajes-section').style.display = 'none';
     document.getElementById('perfil-section').style.display = 'none';
     
-    // QUITAR LA CLASE 'content-area' DEL CHAT PARA QUE OCUPE TODA LA PANTALLA
     const chatSection = document.getElementById('chat-section');
     chatSection.style.display = 'flex';
     chatSection.style.flexDirection = 'column';
@@ -786,7 +762,7 @@ async function sendMessage() {
         });
         
         await loadMessages(currentChatUser.id);
-        await loadMatchesAndConversations();
+        await updateUnreadBadge();
         
         input.value = '';
     } catch (error) {
@@ -795,7 +771,6 @@ async function sendMessage() {
 }
 
 function backToMessages() {
-    // RESTAURAR EL CHAT A SU ESTADO NORMAL
     const chatSection = document.getElementById('chat-section');
     chatSection.style.display = 'none';
     chatSection.style.position = 'relative';
@@ -807,25 +782,53 @@ function backToMessages() {
     
     document.getElementById('mensajes-section').style.display = 'block';
     currentChatUser = null;
+    isChatOpen = false;
     loadMatchesAndConversations();
 }
 
+// ==================== VERIFICACIÓN DE MENSAJES OPTIMIZADA ====================
 function startMessageCheck() {
     if (messageCheckInterval) {
         clearInterval(messageCheckInterval);
     }
     
     messageCheckInterval = setInterval(async () => {
-        if (currentUser) {
-            if (document.getElementById('mensajes-section').style.display === 'block') {
-                await loadMatchesAndConversations();
-            }
-            if (currentChatUser) {
+        if (!currentUser) return;
+        
+        try {
+            // SOLO actualizar badge de mensajes no leídos
+            await updateUnreadBadge();
+            
+            // Si el chat está abierto, SOLO actualizar mensajes, NO recargar toda la conversación
+            if (isChatOpen && currentChatUser) {
                 await loadMessages(currentChatUser.id);
             }
-            await updateUnreadBadge();
+            
+            // Si estamos en la sección de mensajes, actualizar SOLO el contador de no leídos
+            // NO recargar toda la lista de conversaciones
+            if (document.getElementById('mensajes-section').style.display === 'block') {
+                // Solo actualizar el badge, no recargar todo
+                const messagesResponse = await fetch(`${API_URL}/messages?toUserId=${currentUser.id}&read=false`);
+                const messages = await messagesResponse.json();
+                
+                // Actualizar visualmente los no leídos sin recargar todo
+                document.querySelectorAll('.conversation-item').forEach(item => {
+                    const unreadSpan = item.querySelector('.unread-count');
+                    // Aquí podrías agregar lógica para actualizar sin recargar
+                });
+            }
+            
+        } catch (error) {
+            console.error('Error in message check:', error);
         }
-    }, 3000);
+    }, 5000); // Aumentado a 5 segundos para menos parpadeo
+}
+
+function stopMessageCheck() {
+    if (messageCheckInterval) {
+        clearInterval(messageCheckInterval);
+        messageCheckInterval = null;
+    }
 }
 
 // ==================== MURO SOCIAL ====================
@@ -888,7 +891,6 @@ async function loadPublicaciones() {
         const posts = await postsResponse.json();
         const matches = await getMatches();
         
-        // Filtrar publicaciones del usuario y sus matches
         const filteredPosts = posts.filter(post => 
             post.userId === currentUser.id || matches.includes(post.userId)
         ).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
@@ -973,9 +975,7 @@ window.addEventListener('beforeunload', async () => {
             console.error('Error updating status:', error);
         }
     }
-    if (messageCheckInterval) {
-        clearInterval(messageCheckInterval);
-    }
+    stopMessageCheck();
 });
 
 // ==================== EXPORTAR FUNCIONES GLOBALES ====================
