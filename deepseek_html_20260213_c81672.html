@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Baduu - Conoce gente nueva</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 450px;
+            height: 800px;
+            background-color: white;
+            border-radius: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            position: relative;
+            margin: 20px;
+        }
+
+        .screen {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            background: white;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Splash Screen */
+        #splash-screen {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .splash-content {
+            text-align: center;
+            color: white;
+        }
+
+        .splash-content h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Auth Screen */
+        .auth-container {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .auth-header h2 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+
+        .input-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        /* Photo Upload */
+        .photo-container {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .photo-preview {
+            width: 200px;
+            height: 200px;
+            border-radius: 100px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0 auto 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .photo-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .file-input-label {
+            background: white;
+            color: #667eea;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid #667eea;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        #photoInput {
+            display: none;
+        }
+
+        /* Main App */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .main-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .main-header h1 {
+            color: #667eea;
+            font-size: 24px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            object-fit: cover;
+        }
+
+        .main-nav {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: white;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav-item {
+            text-align: center;
+            color: #999;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .nav-item span {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .content-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        /* TINDER CARDS */
+        .cards-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            max-width: 350px;
+            height: 450px;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            user-select: none;
+            touch-action: pan-y;
+            transform-origin: center;
+        }
+
+        .card-photo {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 20px;
+        }
+
+        .card-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .card-status {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .card-status span {
+            color: #4CAF50;
+        }
+
+        .card-swipe-indicator {
+            position: absolute;
+            top: 50px;
+            left: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            transform: rotate(-15deg);
+            display: none;
+        }
+
+        .card-swipe-indicator.right {
+            background: #4CAF50;
+            display: block;
+        }
+
+        .card-swipe-indicator.left {
+            background: #f44336;
+            display: block;
+            left: auto;
+            right: 20px;
+            transform: rotate(15deg);
+        }
+
+        .no-more-cards {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* MATCH ANIMATION */
+        .match-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            z-index: 1000;
+            display: none;
+            animation: matchPop 0.5s ease;
+        }
+
+        @keyframes matchPop {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            80% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+
+        /* MURO */
+        .muro-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .crear-publicacion {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .publicacion-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            resize: none;
+        }
+
+        .publicacion-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .publicacion-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-foto {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-publicar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .publicaciones-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .publicacion-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .publicacion-header {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .publicacion-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            object-fit: cover;
+        }
+
+        .publicacion-user {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .publicacion-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .publicacion-imagen {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+        }
+
+        .publicacion-texto {
+            padding: 15px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .publicacion-likes {
+            padding: 10px 15px;
+            border-top: 1px solid #f0f0f0;
+            color: #999;
+            display: flex;
+            gap: 20px;
+        }
+
+        /* Chat */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .chat-back {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 20px;
+        }
+
+        .message.received {
+            background: white;
+            align-self: flex-start;
+        }
+
+        .message.sent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+        }
+
+        .chat-input-area {
+            padding: 20px;
+            background: white;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+        }
+
+        .chat-send {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        /* Perfil */
+        .profile-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .profile-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 60px;
+            object-fit: cover;
+            margin-bottom: 20px;
+            border: 3px solid #667eea;
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-logout {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- SPLASH -->
+        <div id="splash-screen" class="screen active">
+            <div class="splash-content">
+                <h1>💬 Baduu</h1>
+                <p>Conoce gente increíble</p>
+                <div style="margin-top: 30px;">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUTH -->
+        <div id="auth-screen" class="screen">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <h2 id="authTitle">Bienvenido</h2>
+                    <p id="authSubtitle">Inicia sesión para continuar</p>
+                </div>
+                <div id="loginForm">
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" placeholder="tu@email.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Contraseña</label>
+                        <input type="password" id="loginPassword" placeholder="••••••••">
+                    </div>
+                    <button class="btn btn-primary" onclick="handleLogin()">Iniciar Sesión</button>
+                    <button class="btn btn-secondary" onclick="showRegister()">Crear Cuenta</button>
+                </div>
+                <div id="registerForm" style="display: none;">
+                    <div class="input-group">
+                        <label>Nombre</label>
+                        <input type="text" id="regName" placeholder="Tu nombre">
+                    </div>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" id="regEmail" placeholder="tu@email.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Contraseña</label>
+                        <input type="password" id="regPassword" placeholder="••••••••">
+                    </div>
+                    <button class="btn btn-primary" onclick="handleRegister()">Registrarse</button>
+                    <button class="btn btn-secondary" onclick="showLogin()">Volver a Login</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHOTO UPLOAD -->
+        <div id="photo-screen" class="screen">
+            <div class="photo-container">
+                <div class="photo-header">
+                    <h2>¡Casi listo! 📸</h2>
+                    <p>Sube una foto para que te conozcan</p>
+                </div>
+                <div id="photoPreview" class="photo-preview">
+                    <div style="text-align: center; color: white;">
+                        <span style="font-size: 48px;">📷</span>
+                        <p>Sin foto</p>
+                    </div>
+                </div>
+                <label for="photoInput" class="file-input-label">📁 Seleccionar foto</label>
+                <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
+                <button class="btn btn-primary" onclick="savePhoto()">Continuar</button>
+            </div>
+        </div>
+
+        <!-- MAIN APP -->
+        <div id="main-screen" class="screen">
+            <div class="main-container">
+                <div class="main-header">
+                    <h1>Baduu</h1>
+                    <img id="headerAvatar" src="" alt="Avatar" class="user-avatar">
+                </div>
+                
+                <div class="main-nav">
+                    <div class="nav-item active" onclick="showSection('encuentros')">
+                        <span>👥</span>
+                        <div>Encuentros</div>
+                    </div>
+                    <div class="nav-item" onclick="showSection('muro')">
+                        <span>📱</span>
+                        <div>Muro</div>
+                    </div>
+                    <div class="nav-item" onclick="showSection('mensajes')">
+                        <span>💬</span>
+                        <div>Mensajes</div>
+                    </div>
+                    <div class="nav-item" onclick="showSection('perfil')">
+                        <span>👤</span>
+                        <div>Perfil</div>
+                    </div>
+                </div>
+
+                <div id="content-area" class="content-area">
+                    <!-- ENCUENTROS - TINDER CARDS -->
+                    <div id="encuentros-section">
+                        <div id="cards-container" class="cards-container">
+                            <!-- Cards will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- MURO SOCIAL -->
+                    <div id="muro-section" style="display: none;">
+                        <div class="muro-container">
+                            <div class="crear-publicacion">
+                                <textarea id="publicacionTexto" class="publicacion-input" placeholder="¿Qué quieres compartir?" rows="3"></textarea>
+                                <div class="publicacion-actions">
+                                    <label for="publicacionFoto" class="publicacion-btn btn-foto">📷 Foto</label>
+                                    <input type="file" id="publicacionFoto" accept="image/*" style="display: none;" onchange="previewPublicacionFoto(event)">
+                                    <button class="publicacion-btn btn-publicar" onclick="crearPublicacion()">Publicar</button>
+                                </div>
+                                <div id="fotoPreviewContainer" style="margin-top: 10px; display: none;">
+                                    <img id="fotoPreview" style="max-width: 100%; max-height: 200px; border-radius: 10px;">
+                                </div>
+                            </div>
+                            <div id="publicacionesList" class="publicaciones-list">
+                                <!-- Publicaciones will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MENSAJES -->
+                    <div id="mensajes-section" style="display: none;">
+                        <div id="conversationsList" class="conversations-list">
+                            <!-- Conversations will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- CHAT -->
+                    <div id="chat-section" style="display: none;">
+                        <div class="chat-container">
+                            <div class="chat-header">
+                                <span class="chat-back" onclick="backToMessages()">←</span>
+                                <img id="chatAvatar" src="" alt="" style="width: 40px; height: 40px; border-radius: 20px;">
+                                <span id="chatUserName" style="font-weight: 600;"></span>
+                            </div>
+                            <div id="chatMessages" class="chat-messages"></div>
+                            <div class="chat-input-area">
+                                <input type="text" id="chatInput" class="chat-input" placeholder="Escribe un mensaje...">
+                                <button class="chat-send" onclick="sendMessage()">➤</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PERFIL -->
+                    <div id="perfil-section" style="display: none;">
+                        <div class="profile-container">
+                            <img id="profilePhoto" src="" alt="Foto de perfil" class="profile-photo">
+                            <div id="profileName" class="profile-name"></div>
+                            <div id="profileEmail" class="profile-email"></div>
+                            <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MATCH POPUP -->
+        <div id="matchPopup" class="match-popup">
+            <span style="font-size: 64px;">💕</span>
+            <h2 style="margin: 20px 0;">¡Es un Match!</h2>
+            <p id="matchUserName">Ahora pueden chatear</p>
+            <button class="btn btn-primary" style="margin-top: 20px;" onclick="closeMatchPopup()">Genial</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURACIÓN ====================
+        const APP_CONFIG = {
+            splashDuration: 2000,
+            storageKey: 'baduu_users',
+            currentUserKey: 'baduu_current_user',
+            likesKey: 'baduu_likes',
+            matchesKey: 'baduu_matches',
+            postsKey: 'baduu_posts'
+        };
+
+        // ==================== BASE DE DATOS LOCAL ====================
+        class LocalDB {
+            static init() {
+                if (!localStorage.getItem(APP_CONFIG.storageKey)) {
+                    const defaultUsers = [
+                        { id: '1', name: 'Ana García', email: 'ana@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400', online: true },
+                        { id: '2', name: 'Carlos López', email: 'carlos@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400', online: true },
+                        { id: '3', name: 'María Rodríguez', email: 'maria@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400', online: false },
+                        { id: '4', name: 'Javier Martínez', email: 'javier@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400', online: true }
+                    ];
+                    localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(defaultUsers));
+                }
+
+                if (!localStorage.getItem(APP_CONFIG.likesKey)) {
+                    localStorage.setItem(APP_CONFIG.likesKey, JSON.stringify({}));
+                }
+
+                if (!localStorage.getItem(APP_CONFIG.matchesKey)) {
+                    localStorage.setItem(APP_CONFIG.matchesKey, JSON.stringify([]));
+                }
+
+                if (!localStorage.getItem(APP_CONFIG.postsKey)) {
+                    localStorage.setItem(APP_CONFIG.postsKey, JSON.stringify([]));
+                }
+
+                if (!localStorage.getItem('baduu_messages')) {
+                    localStorage.setItem('baduu_messages', JSON.stringify([]));
+                }
+
+                if (!localStorage.getItem('baduu_conversations')) {
+                    localStorage.setItem('baduu_conversations', JSON.stringify({}));
+                }
+            }
+
+            static getAllUsers() {
+                return JSON.parse(localStorage.getItem(APP_CONFIG.storageKey) || '[]');
+            }
+
+            static getUserById(id) {
+                const users = this.getAllUsers();
+                return users.find(u => u.id === id);
+            }
+
+            static getUserByEmail(email) {
+                const users = this.getAllUsers();
+                return users.find(u => u.email === email);
+            }
+
+            static createUser(userData) {
+                const users = this.getAllUsers();
+                const newUser = { id: Date.now().toString(), ...userData, photo: '' };
+                users.push(newUser);
+                localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(users));
+                return newUser;
+            }
+
+            static updateUserPhoto(userId, photoUrl) {
+                const users = this.getAllUsers();
+                const index = users.findIndex(u => u.id === userId);
+                if (index !== -1) {
+                    users[index].photo = photoUrl;
+                    localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(users));
+                    return users[index];
+                }
+                return null;
+            }
+
+            // ========== SISTEMA DE LIKES Y MATCHES ==========
+            static addLike(fromUserId, toUserId) {
+                const likes = JSON.parse(localStorage.getItem(APP_CONFIG.likesKey) || '{}');
+                
+                if (!likes[fromUserId]) {
+                    likes[fromUserId] = [];
+                }
+                
+                if (!likes[fromUserId].includes(toUserId)) {
+                    likes[fromUserId].push(toUserId);
+                    localStorage.setItem(APP_CONFIG.likesKey, JSON.stringify(likes));
+                    
+                    // Check if it's a match (both liked each other)
+                    if (likes[toUserId] && likes[toUserId].includes(fromUserId)) {
+                        const matches = JSON.parse(localStorage.getItem(APP_CONFIG.matchesKey) || '[]');
+                        const matchId = [fromUserId, toUserId].sort().join('-');
+                        
+                        if (!matches.includes(matchId)) {
+                            matches.push(matchId);
+                            localStorage.setItem(APP_CONFIG.matchesKey, JSON.stringify(matches));
+                            return true; // Es un match!
+                        }
+                    }
+                }
+                return false; // No es match
+            }
+
+            static getLikes(userId) {
+                const likes = JSON.parse(localStorage.getItem(APP_CONFIG.likesKey) || '{}');
+                return likes[userId] || [];
+            }
+
+            static getMatches(userId) {
+                const matches = JSON.parse(localStorage.getItem(APP_CONFIG.matchesKey) || '[]');
+                return matches.filter(m => m.includes(userId)).map(m => {
+                    const ids = m.split('-');
+                    return ids.find(id => id !== userId);
+                });
+            }
+
+            static hasMatch(userId1, userId2) {
+                const matches = JSON.parse(localStorage.getItem(APP_CONFIG.matchesKey) || '[]');
+                const matchId = [userId1, userId2].sort().join('-');
+                return matches.includes(matchId);
+            }
+
+            // ========== SISTEMA DE PUBLICACIONES ==========
+            static getPublicaciones() {
+                return JSON.parse(localStorage.getItem(APP_CONFIG.postsKey) || '[]');
+            }
+
+            static crearPublicacion(userId, texto, imagen = null) {
+                const posts = this.getPublicaciones();
+                const user = this.getUserById(userId);
+                
+                const newPost = {
+                    id: Date.now().toString(),
+                    userId,
+                    userName: user.name,
+                    userPhoto: user.photo,
+                    texto,
+                    imagen,
+                    fecha: new Date().toISOString(),
+                    likes: [],
+                    comments: []
+                };
+                
+                posts.unshift(newPost);
+                localStorage.setItem(APP_CONFIG.postsKey, JSON.stringify(posts));
+                return newPost;
+            }
+
+            static getPublicacionesForUser(userId) {
+                const posts = this.getPublicaciones();
+                const matches = this.getMatches(userId);
+                
+                // Solo mostrar publicaciones de usuarios con los que hay match
+                return posts.filter(post => 
+                    post.userId === userId || matches.includes(post.userId)
+                );
+            }
+
+            // ========== SISTEMA DE MENSAJES ==========
+            static saveMessage(fromUserId, toUserId, text) {
+                const message = {
+                    id: Date.now().toString(),
+                    fromUserId,
+                    toUserId,
+                    text,
+                    timestamp: new Date().toISOString(),
+                    read: false
+                };
+
+                const messages = JSON.parse(localStorage.getItem('baduu_messages') || '[]');
+                messages.push(message);
+                localStorage.setItem('baduu_messages', JSON.stringify(messages));
+
+                const conversations = JSON.parse(localStorage.getItem('baduu_conversations') || '{}');
+                const conversationKey = [fromUserId, toUserId].sort().join('-');
+                
+                conversations[conversationKey] = {
+                    participants: [fromUserId, toUserId],
+                    lastMessage: message,
+                    updatedAt: message.timestamp
+                };
+
+                localStorage.setItem('baduu_conversations', JSON.stringify(conversations));
+                return message;
+            }
+
+            static getMessages(userId1, userId2) {
+                const messages = JSON.parse(localStorage.getItem('baduu_messages') || '[]');
+                return messages.filter(m => 
+                    (m.fromUserId === userId1 && m.toUserId === userId2) ||
+                    (m.fromUserId === userId2 && m.toUserId === userId1)
+                ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            }
+
+            static getUserConversations(userId) {
+                const conversations = JSON.parse(localStorage.getItem('baduu_conversations') || '{}');
+                const userConversations = [];
+                
+                Object.values(conversations).forEach(conv => {
+                    if (conv.participants.includes(userId)) {
+                        const otherUserId = conv.participants.find(id => id !== userId);
+                        const otherUser = this.getUserById(otherUserId);
+                        userConversations.push({ ...conv, otherUser });
+                    }
+                });
+
+                return userConversations.sort((a, b) => 
+                    new Date(b.updatedAt) - new Date(a.updatedAt)
+                );
+            }
+        }
+
+        // ==================== ESTADO GLOBAL ====================
+        let currentUser = null;
+        let currentChatUser = null;
+        let currentCardIndex = 0;
+        let availableUsers = [];
+        let isDragging = false;
+        let startX = 0;
+        let currentX = 0;
+        let currentCard = null;
+        let publicacionFotoData = null;
+
+        // ==================== INICIALIZACIÓN ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            LocalDB.init();
+            
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.remove('active');
+                document.getElementById('auth-screen').classList.add('active');
+            }, APP_CONFIG.splashDuration);
+
+            const savedUser = localStorage.getItem(APP_CONFIG.currentUserKey);
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                setTimeout(() => {
+                    document.getElementById('auth-screen').classList.remove('active');
+                    if (!currentUser.photo) {
+                        document.getElementById('photo-screen').classList.add('active');
+                    } else {
+                        document.getElementById('main-screen').classList.add('active');
+                        loadMainScreen();
+                    }
+                }, APP_CONFIG.splashDuration + 100);
+            }
+        });
+
+        // ==================== AUTENTICACIÓN ====================
+        function showRegister() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('authTitle').textContent = 'Crear Cuenta';
+            document.getElementById('authSubtitle').textContent = 'Regístrate para comenzar';
+        }
+
+        function showLogin() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('authTitle').textContent = 'Bienvenido';
+            document.getElementById('authSubtitle').textContent = 'Inicia sesión para continuar';
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            const user = LocalDB.getUserByEmail(email);
+            
+            if (user && user.password === password) {
+                currentUser = user;
+                localStorage.setItem(APP_CONFIG.currentUserKey, JSON.stringify(user));
+                
+                document.getElementById('auth-screen').classList.remove('active');
+                
+                if (!user.photo) {
+                    document.getElementById('photo-screen').classList.add('active');
+                } else {
+                    document.getElementById('main-screen').classList.add('active');
+                    loadMainScreen();
+                }
+            } else {
+                alert('Email o contraseña incorrectos');
+            }
+        }
+
+        function handleRegister() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            if (!name || !email || !password) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            if (LocalDB.getUserByEmail(email)) {
+                alert('Este email ya está registrado');
+                return;
+            }
+
+            const newUser = LocalDB.createUser({ name, email, password, online: true });
+            currentUser = newUser;
+            localStorage.setItem(APP_CONFIG.currentUserKey, JSON.stringify(newUser));
+            
+            document.getElementById('auth-screen').classList.remove('active');
+            document.getElementById('photo-screen').classList.add('active');
+        }
+
+        // ==================== FOTO DE PERFIL ====================
+        let uploadedPhoto = null;
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedPhoto = e.target.result;
+                    document.getElementById('photoPreview').innerHTML = `<img src="${e.target.result}">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function savePhoto() {
+            if (!uploadedPhoto && !currentUser?.photo) {
+                alert('Por favor selecciona una foto');
+                return;
+            }
+
+            if (uploadedPhoto) {
+                const updatedUser = LocalDB.updateUserPhoto(currentUser.id, uploadedPhoto);
+                currentUser = updatedUser;
+                localStorage.setItem(APP_CONFIG.currentUserKey, JSON.stringify(updatedUser));
+            }
+
+            document.getElementById('photo-screen').classList.remove('active');
+            document.getElementById('main-screen').classList.add('active');
+            loadMainScreen();
+        }
+
+        // ==================== FUNCIONES PRINCIPALES ====================
+        function loadMainScreen() {
+            document.getElementById('headerAvatar').src = currentUser.photo || 'https://via.placeholder.com/40';
+            document.getElementById('profilePhoto').src = currentUser.photo || 'https://via.placeholder.com/120';
+            document.getElementById('profileName').textContent = currentUser.name;
+            document.getElementById('profileEmail').textContent = currentUser.email;
+            
+            loadCards();
+            loadPublicaciones();
+            loadConversations();
+        }
+
+        // ==================== TINDER CARDS ====================
+        function loadCards() {
+            const allUsers = LocalDB.getAllUsers();
+            const likes = LocalDB.getLikes(currentUser.id);
+            const matches = LocalDB.getMatches(currentUser.id);
+            
+            // Excluir: uno mismo, ya likeados, matches
+            availableUsers = allUsers.filter(user => 
+                user.id !== currentUser.id && 
+                !likes.includes(user.id) &&
+                !matches.includes(user.id)
+            );
+            
+            currentCardIndex = 0;
+            renderCurrentCard();
+        }
+
+        function renderCurrentCard() {
+            const container = document.getElementById('cards-container');
+            
+            if (currentCardIndex >= availableUsers.length) {
+                container.innerHTML = `
+                    <div class="no-more-cards">
+                        <span style="font-size: 64px;">😊</span>
+                        <h3>No hay más usuarios</h3>
+                        <p>Vuelve más tarde</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const user = availableUsers[currentCardIndex];
+            container.innerHTML = `
+                <div id="swipe-card" class="card">
+                    <div class="card-swipe-indicator left">✕ NO</div>
+                    <div class="card-swipe-indicator right">♥ LIKE</div>
+                    <img src="${user.photo || 'https://via.placeholder.com/400'}" alt="${user.name}" class="card-photo">
+                    <div class="card-info">
+                        <div class="card-name">${user.name}</div>
+                        <div class="card-status">
+                            <span>●</span> ${user.online ? 'En línea' : 'Desconectado'}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            currentCard = document.getElementById('swipe-card');
+            attachSwipeListeners();
+        }
+
+        function attachSwipeListeners() {
+            if (!currentCard) return;
+
+            currentCard.addEventListener('touchstart', handleTouchStart);
+            currentCard.addEventListener('touchmove', handleTouchMove);
+            currentCard.addEventListener('touchend', handleTouchEnd);
+            
+            currentCard.addEventListener('mousedown', handleMouseStart);
+            currentCard.addEventListener('mousemove', handleMouseMove);
+            currentCard.addEventListener('mouseup', handleMouseEnd);
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            isDragging = true;
+            startX = e.touches[0].clientX;
+        }
+
+        function handleTouchMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            currentX = e.touches[0].clientX;
+            const diff = currentX - startX;
+            updateCardPosition(diff);
+        }
+
+        function handleTouchEnd(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const diff = currentX - startX;
+            handleSwipeEnd(diff);
+        }
+
+        function handleMouseStart(e) {
+            e.preventDefault();
+            isDragging = true;
+            startX = e.clientX;
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            currentX = e.clientX;
+            const diff = currentX - startX;
+            updateCardPosition(diff);
+        }
+
+        function handleMouseEnd(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const diff = currentX - startX;
+            handleSwipeEnd(diff);
+        }
+
+        function updateCardPosition(diff) {
+            if (!currentCard) return;
+            
+            const rotate = diff * 0.1;
+            const opacity = Math.min(Math.abs(diff) / 300, 0.5);
+            
+            currentCard.style.transform = `translateX(${diff}px) rotate(${rotate}deg)`;
+            
+            if (diff > 50) {
+                currentCard.querySelector('.card-swipe-indicator.right').style.display = 'block';
+                currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
+            } else if (diff < -50) {
+                currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
+                currentCard.querySelector('.card-swipe-indicator.left').style.display = 'block';
+            } else {
+                currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
+                currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
+            }
+        }
+
+        function handleSwipeEnd(diff) {
+            isDragging = false;
+            
+            if (Math.abs(diff) > 100) {
+                // Swipe completado
+                if (diff > 0) {
+                    likeUser();
+                } else {
+                    dislikeUser();
+                }
+            } else {
+                // Reset card position
+                currentCard.style.transform = 'translateX(0) rotate(0)';
+                currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
+                currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
+            }
+        }
+
+        function likeUser() {
+            if (currentCardIndex >= availableUsers.length) return;
+            
+            const user = availableUsers[currentCardIndex];
+            const isMatch = LocalDB.addLike(currentUser.id, user.id);
+            
+            // Animación de salida
+            currentCard.style.transition = 'all 0.3s';
+            currentCard.style.transform = 'translateX(1000px) rotate(30deg)';
+            currentCard.style.opacity = '0';
+            
+            setTimeout(() => {
+                if (isMatch) {
+                    showMatchPopup(user.name);
+                }
+                currentCardIndex++;
+                renderCurrentCard();
+            }, 300);
+        }
+
+        function dislikeUser() {
+            if (currentCardIndex >= availableUsers.length) return;
+            
+            currentCard.style.transition = 'all 0.3s';
+            currentCard.style.transform = 'translateX(-1000px) rotate(-30deg)';
+            currentCard.style.opacity = '0';
+            
+            setTimeout(() => {
+                currentCardIndex++;
+                renderCurrentCard();
+            }, 300);
+        }
+
+        function showMatchPopup(userName) {
+            const popup = document.getElementById('matchPopup');
+            document.getElementById('matchUserName').textContent = `¡Te gusta ${userName}!`;
+            popup.style.display = 'block';
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 3000);
+        }
+
+        function closeMatchPopup() {
+            document.getElementById('matchPopup').style.display = 'none';
+        }
+
+        // ==================== MURO SOCIAL ====================
+        function previewPublicacionFoto(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    publicacionFotoData = e.target.result;
+                    const container = document.getElementById('fotoPreviewContainer');
+                    const preview = document.getElementById('fotoPreview');
+                    preview.src = e.target.result;
+                    container.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function crearPublicacion() {
+            const texto = document.getElementById('publicacionTexto').value.trim();
+            
+            if (!texto && !publicacionFotoData) {
+                alert('Escribe algo o selecciona una foto');
+                return;
+            }
+
+            LocalDB.crearPublicacion(currentUser.id, texto, publicacionFotoData);
+            
+            // Limpiar formulario
+            document.getElementById('publicacionTexto').value = '';
+            document.getElementById('fotoPreviewContainer').style.display = 'none';
+            publicacionFotoData = null;
+            document.getElementById('publicacionFoto').value = '';
+            
+            loadPublicaciones();
+        }
+
+        function loadPublicaciones() {
+            const posts = LocalDB.getPublicacionesForUser(currentUser.id);
+            const container = document.getElementById('publicacionesList');
+            
+            if (posts.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #999;">
+                        <span style="font-size: 48px;">📝</span>
+                        <p>No hay publicaciones aún</p>
+                        <p style="margin-top: 10px;">¡Sé el primero en publicar algo!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = posts.map(post => `
+                <div class="publicacion-card">
+                    <div class="publicacion-header">
+                        <img src="${post.userPhoto || 'https://via.placeholder.com/40'}" class="publicacion-avatar">
+                        <div>
+                            <div class="publicacion-user">${post.userName}</div>
+                            <div class="publicacion-date">${new Date(post.fecha).toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                    ${post.imagen ? `<img src="${post.imagen}" class="publicacion-imagen">` : ''}
+                    ${post.texto ? `<div class="publicacion-texto">${post.texto}</div>` : ''}
+                    <div class="publicacion-likes">
+                        <span>❤️ ${post.likes.length} me gusta</span>
+                        <span>💬 ${post.comments.length} comentarios</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ==================== MENSAJES ====================
+        function loadConversations() {
+            const conversations = LocalDB.getUserConversations(currentUser.id);
+            const container = document.getElementById('conversationsList');
+            
+            if (!container) return;
+            
+            if (conversations.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">No tienes conversaciones aún</div>';
+                return;
+            }
+
+            container.innerHTML = conversations.map(conv => `
+                <div class="conversation-item" onclick="openChat('${conv.otherUser.id}')">
+                    <img src="${conv.otherUser.photo || 'https://via.placeholder.com/50'}" class="conversation-avatar">
+                    <div class="conversation-info">
+                        <div class="conversation-name">${conv.otherUser.name}</div>
+                        <div class="conversation-last-message">
+                            ${conv.lastMessage?.fromUserId === currentUser.id ? 'Tú: ' : ''}
+                            ${conv.lastMessage?.text || ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openChat(userId) {
+            const user = LocalDB.getUserById(userId);
+            currentChatUser = user;
+            
+            document.getElementById('chat-section').style.display = 'block';
+            document.getElementById('chatAvatar').src = user.photo || 'https://via.placeholder.com/40';
+            document.getElementById('chatUserName').textContent = user.name;
+            
+            loadMessages(userId);
+        }
+
+        function loadMessages(userId) {
+            const messages = LocalDB.getMessages(currentUser.id, userId);
+            const container = document.getElementById('chatMessages');
+            
+            container.innerHTML = messages.map(msg => `
+                <div class="message ${msg.fromUserId === currentUser.id ? 'sent' : 'received'}">
+                    ${msg.text}
+                    <div style="font-size: 11px; opacity: 0.7; margin-top: 5px;">
+                        ${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                </div>
+            `).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            
+            if (!text || !currentChatUser) return;
+            
+            LocalDB.saveMessage(currentUser.id, currentChatUser.id, text);
+            loadMessages(currentChatUser.id);
+            loadConversations();
+            
+            input.value = '';
+        }
+
+        function backToMessages() {
+            document.getElementById('chat-section').style.display = 'none';
+            document.getElementById('mensajes-section').style.display = 'block';
+            loadConversations();
+        }
+
+        // ==================== NAVEGACIÓN ====================
+        function showSection(section) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            document.getElementById('encuentros-section').style.display = 'none';
+            document.getElementById('muro-section').style.display = 'none';
+            document.getElementById('mensajes-section').style.display = 'none';
+            document.getElementById('perfil-section').style.display = 'none';
+            document.getElementById('chat-section').style.display = 'none';
+
+            if (section === 'encuentros') {
+                document.getElementById('encuentros-section').style.display = 'block';
+                loadCards();
+            } else if (section === 'muro') {
+                document.getElementById('muro-section').style.display = 'block';
+                loadPublicaciones();
+            } else if (section === 'mensajes') {
+                document.getElementById('mensajes-section').style.display = 'block';
+                loadConversations();
+            } else if (section === 'perfil') {
+                document.getElementById('perfil-section').style.display = 'block';
+            }
+        }
+
+        // ==================== PERFIL Y LOGOUT ====================
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                localStorage.removeItem(APP_CONFIG.currentUserKey);
+                currentUser = null;
+                
+                document.getElementById('main-screen').classList.remove('active');
+                document.getElementById('auth-screen').classList.add('active');
+                showLogin();
+            }
+        }
+
+        // Event listener para Enter en chat
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && document.getElementById('chat-section').style.display === 'block') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
