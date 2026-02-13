@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Baduu - Conoce gente nueva</title>
+    <title>Baduu - Conecta con personas</title>
     <style>
         * {
             margin: 0;
@@ -122,6 +122,7 @@
             font-weight: 600;
             cursor: pointer;
             margin-bottom: 15px;
+            transition: all 0.3s;
         }
 
         .btn-primary {
@@ -129,10 +130,20 @@
             color: white;
         }
 
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
         .btn-secondary {
             background: white;
             color: #667eea;
             border: 2px solid #667eea;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
         }
 
         /* Photo Upload */
@@ -203,6 +214,8 @@
             height: 40px;
             border-radius: 20px;
             object-fit: cover;
+            border: 2px solid #667eea;
+            cursor: pointer;
         }
 
         .main-nav {
@@ -220,6 +233,7 @@
             padding: 10px 20px;
             border-radius: 20px;
             transition: all 0.3s;
+            flex: 1;
         }
 
         .nav-item.active {
@@ -301,6 +315,7 @@
             font-weight: bold;
             transform: rotate(-15deg);
             display: none;
+            z-index: 10;
         }
 
         .card-swipe-indicator.right {
@@ -322,7 +337,7 @@
             color: #999;
         }
 
-        /* MATCH ANIMATION */
+        /* MATCH POPUP */
         .match-popup {
             position: fixed;
             top: 50%;
@@ -336,6 +351,7 @@
             z-index: 1000;
             display: none;
             animation: matchPop 0.5s ease;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
         }
 
         @keyframes matchPop {
@@ -442,19 +458,61 @@
             line-height: 1.5;
         }
 
-        .publicacion-likes {
-            padding: 10px 15px;
-            border-top: 1px solid #f0f0f0;
-            color: #999;
+        /* CONVERSACIONES */
+        .conversations-list {
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            gap: 15px;
         }
 
-        /* Chat */
+        .conversation-item {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .conversation-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .conversation-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            object-fit: cover;
+        }
+
+        .conversation-info {
+            flex: 1;
+        }
+
+        .conversation-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .conversation-last-message {
+            color: #999;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        /* CHAT */
         .chat-container {
             display: flex;
             flex-direction: column;
             height: 100%;
+            background: #f8f9fa;
         }
 
         .chat-header {
@@ -469,6 +527,12 @@
         .chat-back {
             font-size: 24px;
             cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 10px;
+        }
+
+        .chat-back:hover {
+            background: #f0f0f0;
         }
 
         .chat-messages {
@@ -484,17 +548,29 @@
             max-width: 70%;
             padding: 12px 18px;
             border-radius: 20px;
+            margin-bottom: 5px;
+            word-wrap: break-word;
         }
 
         .message.received {
             background: white;
             align-self: flex-start;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .message.sent {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             align-self: flex-end;
+            border-bottom-right-radius: 5px;
+            box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+        }
+
+        .message-time {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
         }
 
         .chat-input-area {
@@ -507,10 +583,15 @@
 
         .chat-input {
             flex: 1;
-            padding: 12px;
+            padding: 15px;
             border: 2px solid #e0e0e0;
             border-radius: 25px;
             font-size: 16px;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+            outline: none;
         }
 
         .chat-send {
@@ -522,29 +603,66 @@
             border: none;
             font-size: 20px;
             cursor: pointer;
+            transition: all 0.3s;
         }
 
-        /* Perfil */
+        .chat-send:hover {
+            transform: scale(1.1);
+        }
+
+        /* PERFIL */
         .profile-container {
-            padding: 20px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
         .profile-photo {
-            width: 120px;
-            height: 120px;
-            border-radius: 60px;
+            width: 150px;
+            height: 150px;
+            border-radius: 75px;
             object-fit: cover;
             margin-bottom: 20px;
-            border: 3px solid #667eea;
+            border: 4px solid #667eea;
         }
 
         .profile-name {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 600;
             color: #333;
+            margin-bottom: 10px;
+        }
+
+        .profile-email {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .profile-stats {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 14px;
+            margin-top: 5px;
         }
 
         .btn-logout {
@@ -557,10 +675,17 @@
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            margin-top: 30px;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
         }
 
         .loading-spinner {
+            display: inline-block;
             width: 50px;
             height: 50px;
             border: 5px solid #f3f3f3;
@@ -573,22 +698,33 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .badge {
+            background: #f44336;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 12px;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+        }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- SPLASH -->
+        <!-- SPLASH SCREEN -->
         <div id="splash-screen" class="screen active">
             <div class="splash-content">
                 <h1>💬 Baduu</h1>
-                <p>Conoce gente increíble</p>
+                <p>Conecta con personas increíbles</p>
                 <div style="margin-top: 30px;">
                     <div class="loading-spinner"></div>
                 </div>
             </div>
         </div>
 
-        <!-- AUTH -->
+        <!-- AUTH SCREEN -->
         <div id="auth-screen" class="screen">
             <div class="auth-container">
                 <div class="auth-header">
@@ -598,11 +734,11 @@
                 <div id="loginForm">
                     <div class="input-group">
                         <label>Email</label>
-                        <input type="email" id="loginEmail" placeholder="tu@email.com">
+                        <input type="email" id="loginEmail" placeholder="tu@email.com" value="ana@email.com">
                     </div>
                     <div class="input-group">
                         <label>Contraseña</label>
-                        <input type="password" id="loginPassword" placeholder="••••••••">
+                        <input type="password" id="loginPassword" placeholder="••••••••" value="123456">
                     </div>
                     <button class="btn btn-primary" onclick="handleLogin()">Iniciar Sesión</button>
                     <button class="btn btn-secondary" onclick="showRegister()">Crear Cuenta</button>
@@ -626,7 +762,7 @@
             </div>
         </div>
 
-        <!-- PHOTO UPLOAD -->
+        <!-- PHOTO UPLOAD SCREEN -->
         <div id="photo-screen" class="screen">
             <div class="photo-container">
                 <div class="photo-header">
@@ -642,15 +778,18 @@
                 <label for="photoInput" class="file-input-label">📁 Seleccionar foto</label>
                 <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)">
                 <button class="btn btn-primary" onclick="savePhoto()">Continuar</button>
+                <button class="btn btn-secondary" onclick="logout()">Cerrar sesión</button>
             </div>
         </div>
 
-        <!-- MAIN APP -->
+        <!-- MAIN APP SCREEN -->
         <div id="main-screen" class="screen">
             <div class="main-container">
                 <div class="main-header">
                     <h1>Baduu</h1>
-                    <img id="headerAvatar" src="" alt="Avatar" class="user-avatar">
+                    <div style="position: relative;">
+                        <img id="headerAvatar" src="" alt="Avatar" class="user-avatar" onclick="showSection('perfil')">
+                    </div>
                 </div>
                 
                 <div class="main-nav">
@@ -712,12 +851,15 @@
                         <div class="chat-container">
                             <div class="chat-header">
                                 <span class="chat-back" onclick="backToMessages()">←</span>
-                                <img id="chatAvatar" src="" alt="" style="width: 40px; height: 40px; border-radius: 20px;">
-                                <span id="chatUserName" style="font-weight: 600;"></span>
+                                <img id="chatAvatar" src="" alt="" style="width: 50px; height: 50px; border-radius: 25px; object-fit: cover;">
+                                <div>
+                                    <span id="chatUserName" style="font-weight: 600; font-size: 18px;"></span>
+                                    <div id="chatUserStatus" style="font-size: 12px; color: #4CAF50;">● En línea</div>
+                                </div>
                             </div>
                             <div id="chatMessages" class="chat-messages"></div>
                             <div class="chat-input-area">
-                                <input type="text" id="chatInput" class="chat-input" placeholder="Escribe un mensaje...">
+                                <input type="text" id="chatInput" class="chat-input" placeholder="Escribe un mensaje..." autocomplete="off">
                                 <button class="chat-send" onclick="sendMessage()">➤</button>
                             </div>
                         </div>
@@ -729,6 +871,22 @@
                             <img id="profilePhoto" src="" alt="Foto de perfil" class="profile-photo">
                             <div id="profileName" class="profile-name"></div>
                             <div id="profileEmail" class="profile-email"></div>
+                            
+                            <div class="profile-stats">
+                                <div class="stat-item">
+                                    <div id="profileMatchesCount" class="stat-value">0</div>
+                                    <div class="stat-label">Matches</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div id="profileMessagesCount" class="stat-value">0</div>
+                                    <div class="stat-label">Mensajes</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div id="profilePostsCount" class="stat-value">0</div>
+                                    <div class="stat-label">Publicaciones</div>
+                                </div>
+                            </div>
+                            
                             <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
                         </div>
                     </div>
@@ -739,9 +897,10 @@
         <!-- MATCH POPUP -->
         <div id="matchPopup" class="match-popup">
             <span style="font-size: 64px;">💕</span>
-            <h2 style="margin: 20px 0;">¡Es un Match!</h2>
-            <p id="matchUserName">Ahora pueden chatear</p>
-            <button class="btn btn-primary" style="margin-top: 20px;" onclick="closeMatchPopup()">Genial</button>
+            <h2 style="margin: 20px 0; color: white;">¡Es un Match!</h2>
+            <p id="matchUserName" style="color: white; font-size: 18px;"></p>
+            <button class="btn btn-primary" style="margin-top: 20px; background: white; color: #667eea;" onclick="closeMatchPopup()">¡Genial!</button>
+            <button class="btn btn-secondary" style="margin-top: 10px; background: transparent; color: white; border-color: white;" onclick="openChatFromMatch()">Enviar mensaje</button>
         </div>
     </div>
 
@@ -753,22 +912,59 @@
             currentUserKey: 'baduu_current_user',
             likesKey: 'baduu_likes',
             matchesKey: 'baduu_matches',
-            postsKey: 'baduu_posts'
+            postsKey: 'baduu_posts',
+            messagesKey: 'baduu_messages',
+            conversationsKey: 'baduu_conversations'
         };
 
         // ==================== BASE DE DATOS LOCAL ====================
         class LocalDB {
+            // ========== INICIALIZACIÓN ==========
             static init() {
+                // Usuarios por defecto
                 if (!localStorage.getItem(APP_CONFIG.storageKey)) {
                     const defaultUsers = [
-                        { id: '1', name: 'Ana García', email: 'ana@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400', online: true },
-                        { id: '2', name: 'Carlos López', email: 'carlos@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400', online: true },
-                        { id: '3', name: 'María Rodríguez', email: 'maria@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400', online: false },
-                        { id: '4', name: 'Javier Martínez', email: 'javier@email.com', password: '123456', photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400', online: true }
+                        { 
+                            id: '1', 
+                            name: 'Ana García', 
+                            email: 'ana@email.com', 
+                            password: '123456', 
+                            photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400', 
+                            online: true,
+                            createdAt: new Date().toISOString()
+                        },
+                        { 
+                            id: '2', 
+                            name: 'Carlos López', 
+                            email: 'carlos@email.com', 
+                            password: '123456', 
+                            photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400', 
+                            online: true,
+                            createdAt: new Date().toISOString()
+                        },
+                        { 
+                            id: '3', 
+                            name: 'María Rodríguez', 
+                            email: 'maria@email.com', 
+                            password: '123456', 
+                            photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400', 
+                            online: false,
+                            createdAt: new Date().toISOString()
+                        },
+                        { 
+                            id: '4', 
+                            name: 'Javier Martínez', 
+                            email: 'javier@email.com', 
+                            password: '123456', 
+                            photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400', 
+                            online: true,
+                            createdAt: new Date().toISOString()
+                        }
                     ];
                     localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(defaultUsers));
                 }
 
+                // Inicializar otras colecciones
                 if (!localStorage.getItem(APP_CONFIG.likesKey)) {
                     localStorage.setItem(APP_CONFIG.likesKey, JSON.stringify({}));
                 }
@@ -781,15 +977,16 @@
                     localStorage.setItem(APP_CONFIG.postsKey, JSON.stringify([]));
                 }
 
-                if (!localStorage.getItem('baduu_messages')) {
-                    localStorage.setItem('baduu_messages', JSON.stringify([]));
+                if (!localStorage.getItem(APP_CONFIG.messagesKey)) {
+                    localStorage.setItem(APP_CONFIG.messagesKey, JSON.stringify([]));
                 }
 
-                if (!localStorage.getItem('baduu_conversations')) {
-                    localStorage.setItem('baduu_conversations', JSON.stringify({}));
+                if (!localStorage.getItem(APP_CONFIG.conversationsKey)) {
+                    localStorage.setItem(APP_CONFIG.conversationsKey, JSON.stringify({}));
                 }
             }
 
+            // ========== USUARIOS ==========
             static getAllUsers() {
                 return JSON.parse(localStorage.getItem(APP_CONFIG.storageKey) || '[]');
             }
@@ -806,7 +1003,13 @@
 
             static createUser(userData) {
                 const users = this.getAllUsers();
-                const newUser = { id: Date.now().toString(), ...userData, photo: '' };
+                const newUser = { 
+                    id: Date.now().toString(), 
+                    ...userData, 
+                    photo: '',
+                    online: true,
+                    createdAt: new Date().toISOString()
+                };
                 users.push(newUser);
                 localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(users));
                 return newUser;
@@ -823,7 +1026,18 @@
                 return null;
             }
 
-            // ========== SISTEMA DE LIKES Y MATCHES ==========
+            static updateUserStatus(userId, online) {
+                const users = this.getAllUsers();
+                const index = users.findIndex(u => u.id === userId);
+                if (index !== -1) {
+                    users[index].online = online;
+                    localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(users));
+                    return users[index];
+                }
+                return null;
+            }
+
+            // ========== LIKES Y MATCHES ==========
             static addLike(fromUserId, toUserId) {
                 const likes = JSON.parse(localStorage.getItem(APP_CONFIG.likesKey) || '{}');
                 
@@ -835,7 +1049,7 @@
                     likes[fromUserId].push(toUserId);
                     localStorage.setItem(APP_CONFIG.likesKey, JSON.stringify(likes));
                     
-                    // Check if it's a match (both liked each other)
+                    // Verificar si es match (like recíproco)
                     if (likes[toUserId] && likes[toUserId].includes(fromUserId)) {
                         const matches = JSON.parse(localStorage.getItem(APP_CONFIG.matchesKey) || '[]');
                         const matchId = [fromUserId, toUserId].sort().join('-');
@@ -869,7 +1083,7 @@
                 return matches.includes(matchId);
             }
 
-            // ========== SISTEMA DE PUBLICACIONES ==========
+            // ========== PUBLICACIONES ==========
             static getPublicaciones() {
                 return JSON.parse(localStorage.getItem(APP_CONFIG.postsKey) || '[]');
             }
@@ -899,13 +1113,13 @@
                 const posts = this.getPublicaciones();
                 const matches = this.getMatches(userId);
                 
-                // Solo mostrar publicaciones de usuarios con los que hay match
+                // Mostrar publicaciones propias y de usuarios con match
                 return posts.filter(post => 
                     post.userId === userId || matches.includes(post.userId)
                 );
             }
 
-            // ========== SISTEMA DE MENSAJES ==========
+            // ========== MENSAJES ==========
             static saveMessage(fromUserId, toUserId, text) {
                 const message = {
                     id: Date.now().toString(),
@@ -916,25 +1130,38 @@
                     read: false
                 };
 
-                const messages = JSON.parse(localStorage.getItem('baduu_messages') || '[]');
+                // Guardar mensaje
+                const messages = JSON.parse(localStorage.getItem(APP_CONFIG.messagesKey) || '[]');
                 messages.push(message);
-                localStorage.setItem('baduu_messages', JSON.stringify(messages));
+                localStorage.setItem(APP_CONFIG.messagesKey, JSON.stringify(messages));
 
-                const conversations = JSON.parse(localStorage.getItem('baduu_conversations') || '{}');
+                // Actualizar conversación
+                const conversations = JSON.parse(localStorage.getItem(APP_CONFIG.conversationsKey) || '{}');
                 const conversationKey = [fromUserId, toUserId].sort().join('-');
                 
-                conversations[conversationKey] = {
-                    participants: [fromUserId, toUserId],
-                    lastMessage: message,
-                    updatedAt: message.timestamp
-                };
+                if (!conversations[conversationKey]) {
+                    conversations[conversationKey] = {
+                        participants: [fromUserId, toUserId],
+                        lastMessage: message,
+                        updatedAt: message.timestamp,
+                        unreadCount: 0
+                    };
+                } else {
+                    conversations[conversationKey].lastMessage = message;
+                    conversations[conversationKey].updatedAt = message.timestamp;
+                    
+                    // Incrementar no leídos si el mensaje es para el otro usuario
+                    if (message.toUserId !== fromUserId) {
+                        conversations[conversationKey].unreadCount = (conversations[conversationKey].unreadCount || 0) + 1;
+                    }
+                }
 
-                localStorage.setItem('baduu_conversations', JSON.stringify(conversations));
+                localStorage.setItem(APP_CONFIG.conversationsKey, JSON.stringify(conversations));
                 return message;
             }
 
             static getMessages(userId1, userId2) {
-                const messages = JSON.parse(localStorage.getItem('baduu_messages') || '[]');
+                const messages = JSON.parse(localStorage.getItem(APP_CONFIG.messagesKey) || '[]');
                 return messages.filter(m => 
                     (m.fromUserId === userId1 && m.toUserId === userId2) ||
                     (m.fromUserId === userId2 && m.toUserId === userId1)
@@ -942,20 +1169,48 @@
             }
 
             static getUserConversations(userId) {
-                const conversations = JSON.parse(localStorage.getItem('baduu_conversations') || '{}');
+                const conversations = JSON.parse(localStorage.getItem(APP_CONFIG.conversationsKey) || '{}');
                 const userConversations = [];
                 
                 Object.values(conversations).forEach(conv => {
                     if (conv.participants.includes(userId)) {
                         const otherUserId = conv.participants.find(id => id !== userId);
                         const otherUser = this.getUserById(otherUserId);
-                        userConversations.push({ ...conv, otherUser });
+                        userConversations.push({ 
+                            ...conv, 
+                            otherUser,
+                            otherUserId 
+                        });
                     }
                 });
 
                 return userConversations.sort((a, b) => 
                     new Date(b.updatedAt) - new Date(a.updatedAt)
                 );
+            }
+
+            static markConversationAsRead(userId, otherUserId) {
+                const conversations = JSON.parse(localStorage.getItem(APP_CONFIG.conversationsKey) || '{}');
+                const conversationKey = [userId, otherUserId].sort().join('-');
+                
+                if (conversations[conversationKey]) {
+                    conversations[conversationKey].unreadCount = 0;
+                    localStorage.setItem(APP_CONFIG.conversationsKey, JSON.stringify(conversations));
+                }
+            }
+
+            // ========== ESTADÍSTICAS ==========
+            static getUserStats(userId) {
+                const matches = this.getMatches(userId);
+                const messages = JSON.parse(localStorage.getItem(APP_CONFIG.messagesKey) || '[]');
+                const userMessages = messages.filter(m => m.fromUserId === userId || m.toUserId === userId);
+                const posts = this.getPublicaciones().filter(p => p.userId === userId);
+                
+                return {
+                    matches: matches.length,
+                    messages: userMessages.length,
+                    posts: posts.length
+                };
             }
         }
 
@@ -969,29 +1224,35 @@
         let currentX = 0;
         let currentCard = null;
         let publicacionFotoData = null;
+        let matchUserId = null;
+        let messageCheckInterval = null;
 
         // ==================== INICIALIZACIÓN ====================
         document.addEventListener('DOMContentLoaded', () => {
             LocalDB.init();
             
-            setTimeout(() => {
-                document.getElementById('splash-screen').classList.remove('active');
-                document.getElementById('auth-screen').classList.add('active');
-            }, APP_CONFIG.splashDuration);
-
+            // Verificar si hay sesión activa
             const savedUser = localStorage.getItem(APP_CONFIG.currentUserKey);
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
-                setTimeout(() => {
-                    document.getElementById('auth-screen').classList.remove('active');
+                LocalDB.updateUserStatus(currentUser.id, true);
+            }
+            
+            // Splash screen
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.remove('active');
+                
+                if (currentUser) {
                     if (!currentUser.photo) {
                         document.getElementById('photo-screen').classList.add('active');
                     } else {
                         document.getElementById('main-screen').classList.add('active');
                         loadMainScreen();
                     }
-                }, APP_CONFIG.splashDuration + 100);
-            }
+                } else {
+                    document.getElementById('auth-screen').classList.add('active');
+                }
+            }, APP_CONFIG.splashDuration);
         });
 
         // ==================== AUTENTICACIÓN ====================
@@ -1022,6 +1283,7 @@
             
             if (user && user.password === password) {
                 currentUser = user;
+                LocalDB.updateUserStatus(user.id, true);
                 localStorage.setItem(APP_CONFIG.currentUserKey, JSON.stringify(user));
                 
                 document.getElementById('auth-screen').classList.remove('active');
@@ -1052,12 +1314,52 @@
                 return;
             }
 
-            const newUser = LocalDB.createUser({ name, email, password, online: true });
+            const newUser = LocalDB.createUser({ 
+                name, 
+                email, 
+                password, 
+                online: true 
+            });
+            
             currentUser = newUser;
             localStorage.setItem(APP_CONFIG.currentUserKey, JSON.stringify(newUser));
             
             document.getElementById('auth-screen').classList.remove('active');
             document.getElementById('photo-screen').classList.add('active');
+        }
+
+        // ==================== LOGOUT ====================
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                // Marcar usuario como offline
+                if (currentUser) {
+                    LocalDB.updateUserStatus(currentUser.id, false);
+                }
+                
+                // Limpiar datos de sesión
+                localStorage.removeItem(APP_CONFIG.currentUserKey);
+                currentUser = null;
+                currentChatUser = null;
+                
+                // Detener intervalo de mensajes
+                if (messageCheckInterval) {
+                    clearInterval(messageCheckInterval);
+                    messageCheckInterval = null;
+                }
+                
+                // Cambiar a pantalla de login
+                document.getElementById('main-screen').classList.remove('active');
+                document.getElementById('photo-screen').classList.remove('active');
+                document.getElementById('auth-screen').classList.add('active');
+                showLogin();
+                
+                // Limpiar formularios
+                document.getElementById('loginEmail').value = 'ana@email.com';
+                document.getElementById('loginPassword').value = '123456';
+                document.getElementById('regName').value = '';
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+            }
         }
 
         // ==================== FOTO DE PERFIL ====================
@@ -1094,14 +1396,44 @@
 
         // ==================== FUNCIONES PRINCIPALES ====================
         function loadMainScreen() {
+            // Actualizar header
             document.getElementById('headerAvatar').src = currentUser.photo || 'https://via.placeholder.com/40';
-            document.getElementById('profilePhoto').src = currentUser.photo || 'https://via.placeholder.com/120';
+            
+            // Actualizar perfil
+            document.getElementById('profilePhoto').src = currentUser.photo || 'https://via.placeholder.com/150';
             document.getElementById('profileName').textContent = currentUser.name;
             document.getElementById('profileEmail').textContent = currentUser.email;
             
+            // Cargar estadísticas
+            const stats = LocalDB.getUserStats(currentUser.id);
+            document.getElementById('profileMatchesCount').textContent = stats.matches;
+            document.getElementById('profileMessagesCount').textContent = stats.messages;
+            document.getElementById('profilePostsCount').textContent = stats.posts;
+            
+            // Cargar secciones
             loadCards();
             loadPublicaciones();
             loadConversations();
+            
+            // Iniciar verificación de nuevos mensajes
+            startMessageCheck();
+        }
+
+        // ==================== VERIFICACIÓN DE MENSAJES ====================
+        function startMessageCheck() {
+            if (messageCheckInterval) {
+                clearInterval(messageCheckInterval);
+            }
+            
+            // Verificar nuevos mensajes cada 2 segundos
+            messageCheckInterval = setInterval(() => {
+                if (currentUser && document.getElementById('mensajes-section').style.display === 'block') {
+                    loadConversations();
+                }
+                if (currentUser && currentChatUser) {
+                    loadMessages(currentChatUser.id);
+                }
+            }, 2000);
         }
 
         // ==================== TINDER CARDS ====================
@@ -1129,7 +1461,7 @@
                     <div class="no-more-cards">
                         <span style="font-size: 64px;">😊</span>
                         <h3>No hay más usuarios</h3>
-                        <p>Vuelve más tarde</p>
+                        <p>Vuelve más tarde para conocer más personas</p>
                     </div>
                 `;
                 return;
@@ -1157,19 +1489,23 @@
         function attachSwipeListeners() {
             if (!currentCard) return;
 
+            // Touch events
             currentCard.addEventListener('touchstart', handleTouchStart);
             currentCard.addEventListener('touchmove', handleTouchMove);
             currentCard.addEventListener('touchend', handleTouchEnd);
             
+            // Mouse events
             currentCard.addEventListener('mousedown', handleMouseStart);
             currentCard.addEventListener('mousemove', handleMouseMove);
             currentCard.addEventListener('mouseup', handleMouseEnd);
+            currentCard.addEventListener('mouseleave', handleMouseEnd);
         }
 
         function handleTouchStart(e) {
             e.preventDefault();
             isDragging = true;
             startX = e.touches[0].clientX;
+            currentCard.style.transition = 'none';
         }
 
         function handleTouchMove(e) {
@@ -1191,6 +1527,7 @@
             e.preventDefault();
             isDragging = true;
             startX = e.clientX;
+            currentCard.style.transition = 'none';
         }
 
         function handleMouseMove(e) {
@@ -1215,6 +1552,7 @@
             const opacity = Math.min(Math.abs(diff) / 300, 0.5);
             
             currentCard.style.transform = `translateX(${diff}px) rotate(${rotate}deg)`;
+            currentCard.style.opacity = 1 - opacity;
             
             if (diff > 50) {
                 currentCard.querySelector('.card-swipe-indicator.right').style.display = 'block';
@@ -1230,9 +1568,9 @@
 
         function handleSwipeEnd(diff) {
             isDragging = false;
+            currentCard.style.transition = 'all 0.3s';
             
             if (Math.abs(diff) > 100) {
-                // Swipe completado
                 if (diff > 0) {
                     likeUser();
                 } else {
@@ -1241,6 +1579,7 @@
             } else {
                 // Reset card position
                 currentCard.style.transform = 'translateX(0) rotate(0)';
+                currentCard.style.opacity = '1';
                 currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
                 currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
             }
@@ -1253,13 +1592,17 @@
             const isMatch = LocalDB.addLike(currentUser.id, user.id);
             
             // Animación de salida
-            currentCard.style.transition = 'all 0.3s';
             currentCard.style.transform = 'translateX(1000px) rotate(30deg)';
             currentCard.style.opacity = '0';
             
             setTimeout(() => {
                 if (isMatch) {
+                    matchUserId = user.id;
                     showMatchPopup(user.name);
+                    
+                    // Actualizar estadísticas
+                    const stats = LocalDB.getUserStats(currentUser.id);
+                    document.getElementById('profileMatchesCount').textContent = stats.matches;
                 }
                 currentCardIndex++;
                 renderCurrentCard();
@@ -1269,7 +1612,6 @@
         function dislikeUser() {
             if (currentCardIndex >= availableUsers.length) return;
             
-            currentCard.style.transition = 'all 0.3s';
             currentCard.style.transform = 'translateX(-1000px) rotate(-30deg)';
             currentCard.style.opacity = '0';
             
@@ -1283,13 +1625,19 @@
             const popup = document.getElementById('matchPopup');
             document.getElementById('matchUserName').textContent = `¡Te gusta ${userName}!`;
             popup.style.display = 'block';
-            setTimeout(() => {
-                popup.style.display = 'none';
-            }, 3000);
         }
 
         function closeMatchPopup() {
             document.getElementById('matchPopup').style.display = 'none';
+            matchUserId = null;
+        }
+
+        function openChatFromMatch() {
+            if (matchUserId) {
+                closeMatchPopup();
+                openChat(matchUserId);
+                showSection('mensajes');
+            }
         }
 
         // ==================== MURO SOCIAL ====================
@@ -1325,6 +1673,10 @@
             document.getElementById('publicacionFoto').value = '';
             
             loadPublicaciones();
+            
+            // Actualizar estadísticas
+            const stats = LocalDB.getUserStats(currentUser.id);
+            document.getElementById('profilePostsCount').textContent = stats.posts;
         }
 
         function loadPublicaciones() {
@@ -1353,10 +1705,6 @@
                     </div>
                     ${post.imagen ? `<img src="${post.imagen}" class="publicacion-imagen">` : ''}
                     ${post.texto ? `<div class="publicacion-texto">${post.texto}</div>` : ''}
-                    <div class="publicacion-likes">
-                        <span>❤️ ${post.likes.length} me gusta</span>
-                        <span>💬 ${post.comments.length} comentarios</span>
-                    </div>
                 </div>
             `).join('');
         }
@@ -1373,44 +1721,72 @@
                 return;
             }
 
-            container.innerHTML = conversations.map(conv => `
-                <div class="conversation-item" onclick="openChat('${conv.otherUser.id}')">
-                    <img src="${conv.otherUser.photo || 'https://via.placeholder.com/50'}" class="conversation-avatar">
-                    <div class="conversation-info">
-                        <div class="conversation-name">${conv.otherUser.name}</div>
-                        <div class="conversation-last-message">
-                            ${conv.lastMessage?.fromUserId === currentUser.id ? 'Tú: ' : ''}
-                            ${conv.lastMessage?.text || ''}
+            container.innerHTML = conversations.map(conv => {
+                const otherUser = conv.otherUser;
+                const lastMessage = conv.lastMessage;
+                const unreadCount = conv.unreadCount || 0;
+                
+                return `
+                    <div class="conversation-item" onclick="openChat('${otherUser.id}')">
+                        <div style="position: relative;">
+                            <img src="${otherUser.photo || 'https://via.placeholder.com/50'}" class="conversation-avatar">
+                            ${otherUser.online ? '<span style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; background: #4CAF50; border-radius: 50%; border: 2px solid white;"></span>' : ''}
+                        </div>
+                        <div class="conversation-info">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div class="conversation-name">${otherUser.name}</div>
+                                ${unreadCount > 0 ? `<span style="background: #f44336; color: white; border-radius: 50%; padding: 2px 6px; font-size: 12px;">${unreadCount}</span>` : ''}
+                            </div>
+                            <div class="conversation-last-message">
+                                ${lastMessage?.fromUserId === currentUser.id ? 'Tú: ' : ''}
+                                ${lastMessage?.text || ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function openChat(userId) {
             const user = LocalDB.getUserById(userId);
+            if (!user) return;
+            
             currentChatUser = user;
             
+            // Marcar conversación como leída
+            LocalDB.markConversationAsRead(currentUser.id, userId);
+            
             document.getElementById('chat-section').style.display = 'block';
-            document.getElementById('chatAvatar').src = user.photo || 'https://via.placeholder.com/40';
+            document.getElementById('chatAvatar').src = user.photo || 'https://via.placeholder.com/50';
             document.getElementById('chatUserName').textContent = user.name;
+            document.getElementById('chatUserStatus').innerHTML = user.online ? '● En línea' : '○ Desconectado';
+            document.getElementById('chatUserStatus').style.color = user.online ? '#4CAF50' : '#999';
             
             loadMessages(userId);
+            
+            // Enfocar input
+            setTimeout(() => {
+                document.getElementById('chatInput').focus();
+            }, 300);
         }
 
         function loadMessages(userId) {
             const messages = LocalDB.getMessages(currentUser.id, userId);
             const container = document.getElementById('chatMessages');
             
-            container.innerHTML = messages.map(msg => `
-                <div class="message ${msg.fromUserId === currentUser.id ? 'sent' : 'received'}">
-                    ${msg.text}
-                    <div style="font-size: 11px; opacity: 0.7; margin-top: 5px;">
-                        ${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            container.innerHTML = messages.map(msg => {
+                const isSent = msg.fromUserId === currentUser.id;
+                return `
+                    <div class="message ${isSent ? 'sent' : 'received'}">
+                        ${msg.text}
+                        <div class="message-time">
+                            ${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
             
+            // Scroll al último mensaje
             container.scrollTop = container.scrollHeight;
         }
 
@@ -1430,22 +1806,26 @@
         function backToMessages() {
             document.getElementById('chat-section').style.display = 'none';
             document.getElementById('mensajes-section').style.display = 'block';
+            currentChatUser = null;
             loadConversations();
         }
 
         // ==================== NAVEGACIÓN ====================
         function showSection(section) {
+            // Actualizar nav items
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
             event.currentTarget.classList.add('active');
 
+            // Ocultar todas las secciones
             document.getElementById('encuentros-section').style.display = 'none';
             document.getElementById('muro-section').style.display = 'none';
             document.getElementById('mensajes-section').style.display = 'none';
             document.getElementById('perfil-section').style.display = 'none';
             document.getElementById('chat-section').style.display = 'none';
 
+            // Mostrar sección seleccionada
             if (section === 'encuentros') {
                 document.getElementById('encuentros-section').style.display = 'block';
                 loadCards();
@@ -1457,25 +1837,29 @@
                 loadConversations();
             } else if (section === 'perfil') {
                 document.getElementById('perfil-section').style.display = 'block';
-            }
-        }
-
-        // ==================== PERFIL Y LOGOUT ====================
-        function logout() {
-            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                localStorage.removeItem(APP_CONFIG.currentUserKey);
-                currentUser = null;
-                
-                document.getElementById('main-screen').classList.remove('active');
-                document.getElementById('auth-screen').classList.add('active');
-                showLogin();
+                // Actualizar estadísticas
+                const stats = LocalDB.getUserStats(currentUser.id);
+                document.getElementById('profileMatchesCount').textContent = stats.matches;
+                document.getElementById('profileMessagesCount').textContent = stats.messages;
+                document.getElementById('profilePostsCount').textContent = stats.posts;
             }
         }
 
         // Event listener para Enter en chat
         document.addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && document.getElementById('chat-section').style.display === 'block') {
+                e.preventDefault();
                 sendMessage();
+            }
+        });
+
+        // Limpiar al cerrar la página
+        window.addEventListener('beforeunload', () => {
+            if (currentUser) {
+                LocalDB.updateUserStatus(currentUser.id, false);
+            }
+            if (messageCheckInterval) {
+                clearInterval(messageCheckInterval);
             }
         });
     </script>
