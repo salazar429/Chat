@@ -6,10 +6,10 @@ const server = express();
 const router = jsonServer.router(path.join(__dirname, 'database.json'));
 const middlewares = jsonServer.defaults();
 
-// Servir archivos estáticos de la carpeta public
+// Servir archivos estáticos
 server.use(express.static(path.join(__dirname, 'public')));
 
-// Middlewares de json-server
+// Middlewares
 server.use(middlewares);
 server.use(jsonServer.bodyParser);
 
@@ -24,7 +24,7 @@ server.use((req, res, next) => {
 
 // ============ ENDPOINTS PERSONALIZADOS ============
 
-// Endpoint para matches
+// Endpoint para matches (EVITAR DUPLICADOS)
 server.get('/api/matches', (req, res) => {
     const db = router.db;
     let matches = db.get('matches').value();
@@ -35,7 +35,19 @@ server.get('/api/matches', (req, res) => {
         );
     }
     
-    res.json(matches);
+    // ELIMINAR DUPLICADOS
+    const uniqueMatches = [];
+    const matchKeys = new Set();
+    
+    matches.forEach(match => {
+        const key = match.users.sort().join('-');
+        if (!matchKeys.has(key)) {
+            matchKeys.add(key);
+            uniqueMatches.push(match);
+        }
+    });
+    
+    res.json(uniqueMatches);
 });
 
 // Endpoint para likes
@@ -75,13 +87,20 @@ server.get('/api/messages', (req, res) => {
     res.json(messages);
 });
 
-// Endpoint para crear like y verificar match automáticamente
+// Endpoint para crear like y verificar match (EVITAR DUPLICADOS)
 server.post('/api/likes', (req, res) => {
     const db = router.db;
     const like = req.body;
     
-    // Guardar like
-    db.get('likes').push(like).write();
+    // Verificar si ya existe este like
+    const existingLike = db.get('likes')
+        .find(l => l.userId === like.userId && l.targetUserId === like.targetUserId)
+        .value();
+    
+    if (!existingLike) {
+        // Guardar like
+        db.get('likes').push(like).write();
+    }
     
     // Verificar si hay like recíproco
     const reciprocalLike = db.get('likes')
@@ -90,13 +109,23 @@ server.post('/api/likes', (req, res) => {
     
     let match = null;
     if (reciprocalLike) {
-        // Crear match
-        match = {
-            id: Date.now().toString(),
-            users: [like.userId, like.targetUserId],
-            timestamp: new Date().toISOString()
-        };
-        db.get('matches').push(match).write();
+        // Verificar si el match ya existe
+        const matchKey = [like.userId, like.targetUserId].sort().join('-');
+        const existingMatch = db.get('matches')
+            .find(m => m.users.sort().join('-') === matchKey)
+            .value();
+        
+        if (!existingMatch) {
+            // Crear match
+            match = {
+                id: Date.now().toString(),
+                users: [like.userId, like.targetUserId],
+                timestamp: new Date().toISOString()
+            };
+            db.get('matches').push(match).write();
+        } else {
+            match = existingMatch;
+        }
     }
     
     res.json({ like, match });
@@ -105,7 +134,7 @@ server.post('/api/likes', (req, res) => {
 // Usar las rutas de la API con prefijo /api
 server.use('/api', router);
 
-// Todas las demás rutas redirigen al index.html (para SPA)
+// Todas las demás rutas redirigen al index.html
 server.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
