@@ -287,8 +287,12 @@ async function loadMainScreen() {
 
 async function loadUserStats() {
     try {
-        const messages = await fetch(`${API_URL}/messages?fromUserId=${currentUser.id}&toUserId=${currentUser.id}`).then(res => res.json());
-        const posts = await fetch(`${API_URL}/posts?userId=${currentUser.id}`).then(res => res.json());
+        const messagesResponse = await fetch(`${API_URL}/messages?fromUserId=${currentUser.id}&toUserId=${currentUser.id}`);
+        const messages = await messagesResponse.json();
+        
+        const postsResponse = await fetch(`${API_URL}/posts?userId=${currentUser.id}`);
+        const posts = await postsResponse.json();
+        
         const matches = await getMatches();
         
         document.getElementById('profileMatchesCount').textContent = matches.length;
@@ -302,7 +306,9 @@ async function loadUserStats() {
 // ==================== TINDER CARDS ====================
 async function loadCards() {
     try {
-        const users = await fetch(`${API_URL}/users`).then(res => res.json());
+        const usersResponse = await fetch(`${API_URL}/users`);
+        const users = await usersResponse.json();
+        
         const likes = await getUserLikes();
         const matches = await getMatches();
         
@@ -320,12 +326,14 @@ async function loadCards() {
 }
 
 async function getUserLikes() {
-    const likes = await fetch(`${API_URL}/likes?userId=${currentUser.id}`).then(res => res.json());
+    const likesResponse = await fetch(`${API_URL}/likes?userId=${currentUser.id}`);
+    const likes = await likesResponse.json();
     return likes.map(l => l.targetUserId);
 }
 
 async function getMatches() {
-    const matches = await fetch(`${API_URL}/matches?users_like=${currentUser.id}`).then(res => res.json());
+    const matchesResponse = await fetch(`${API_URL}/matches?users_like=${currentUser.id}`);
+    const matches = await matchesResponse.json();
     return matches.map(m => m.users.find(id => id !== currentUser.id));
 }
 
@@ -362,12 +370,175 @@ function renderCurrentCard() {
     attachSwipeListeners();
 }
 
-// ... (código de swipe igual que antes) ...
+function attachSwipeListeners() {
+    if (!currentCard) return;
 
-// ==================== MATCHES Y CONVERSACIONES (CORREGIDO - SIN DUPLICADOS) ====================
+    currentCard.addEventListener('touchstart', handleTouchStart);
+    currentCard.addEventListener('touchmove', handleTouchMove);
+    currentCard.addEventListener('touchend', handleTouchEnd);
+    currentCard.addEventListener('mousedown', handleMouseStart);
+    currentCard.addEventListener('mousemove', handleMouseMove);
+    currentCard.addEventListener('mouseup', handleMouseEnd);
+    currentCard.addEventListener('mouseleave', handleMouseEnd);
+}
+
+function handleTouchStart(e) {
+    e.preventDefault();
+    isDragging = true;
+    startX = e.touches[0].clientX;
+    currentCard.style.transition = 'none';
+}
+
+function handleTouchMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    currentX = e.touches[0].clientX;
+    const diff = currentX - startX;
+    updateCardPosition(diff);
+}
+
+function handleTouchEnd(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const diff = currentX - startX;
+    handleSwipeEnd(diff);
+}
+
+function handleMouseStart(e) {
+    e.preventDefault();
+    isDragging = true;
+    startX = e.clientX;
+    currentCard.style.transition = 'none';
+}
+
+function handleMouseMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    currentX = e.clientX;
+    const diff = currentX - startX;
+    updateCardPosition(diff);
+}
+
+function handleMouseEnd(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const diff = currentX - startX;
+    handleSwipeEnd(diff);
+}
+
+function updateCardPosition(diff) {
+    if (!currentCard) return;
+    
+    const rotate = diff * 0.1;
+    const opacity = Math.min(Math.abs(diff) / 300, 0.5);
+    
+    currentCard.style.transform = `translateX(${diff}px) rotate(${rotate}deg)`;
+    currentCard.style.opacity = 1 - opacity;
+    
+    if (diff > 50) {
+        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'block';
+        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
+    } else if (diff < -50) {
+        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
+        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'block';
+    } else {
+        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
+        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
+    }
+}
+
+function handleSwipeEnd(diff) {
+    isDragging = false;
+    currentCard.style.transition = 'all 0.3s';
+    
+    if (Math.abs(diff) > 100) {
+        if (diff > 0) {
+            likeUser();
+        } else {
+            dislikeUser();
+        }
+    } else {
+        currentCard.style.transform = 'translateX(0) rotate(0)';
+        currentCard.style.opacity = '1';
+        currentCard.querySelector('.card-swipe-indicator.right').style.display = 'none';
+        currentCard.querySelector('.card-swipe-indicator.left').style.display = 'none';
+    }
+}
+
+async function likeUser() {
+    if (currentCardIndex >= availableUsers.length) return;
+    
+    const user = availableUsers[currentCardIndex];
+    
+    try {
+        // Crear like
+        const likeResponse = await fetch(`${API_URL}/likes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: currentUser.id,
+                targetUserId: user.id,
+                timestamp: new Date().toISOString()
+            })
+        });
+        
+        const result = await likeResponse.json();
+        
+        // Animación de salida
+        currentCard.style.transform = 'translateX(1000px) rotate(30deg)';
+        currentCard.style.opacity = '0';
+        
+        setTimeout(() => {
+            if (result.match) {
+                matchUserId = user.id;
+                showMatchPopup(user.name);
+                loadUserStats();
+            }
+            currentCardIndex++;
+            renderCurrentCard();
+        }, 300);
+        
+    } catch (error) {
+        console.error('Error liking user:', error);
+    }
+}
+
+function dislikeUser() {
+    if (currentCardIndex >= availableUsers.length) return;
+    
+    currentCard.style.transform = 'translateX(-1000px) rotate(-30deg)';
+    currentCard.style.opacity = '0';
+    
+    setTimeout(() => {
+        currentCardIndex++;
+        renderCurrentCard();
+    }, 300);
+}
+
+function showMatchPopup(userName) {
+    const popup = document.getElementById('matchPopup');
+    document.getElementById('matchUserName').textContent = `¡Te gusta ${userName}!`;
+    popup.style.display = 'block';
+}
+
+function closeMatchPopup() {
+    document.getElementById('matchPopup').style.display = 'none';
+    matchUserId = null;
+}
+
+function openChatFromMatch() {
+    if (matchUserId) {
+        closeMatchPopup();
+        openChat(matchUserId);
+        showSection('mensajes');
+    }
+}
+
+// ==================== MATCHES Y CONVERSACIONES (SIN DUPLICADOS) ====================
 async function loadMatchesAndConversations() {
     try {
-        const matches = await fetch(`${API_URL}/matches?users_like=${currentUser.id}`).then(res => res.json());
+        const matchesResponse = await fetch(`${API_URL}/matches?users_like=${currentUser.id}`);
+        const matches = await matchesResponse.json();
         const matchesList = document.getElementById('matchesList');
         const conversationsList = document.getElementById('conversationsList');
         
@@ -392,7 +563,8 @@ async function loadMatchesAndConversations() {
             let matchesHtml = '';
             for (const match of uniqueMatches) {
                 const otherUserId = match.users.find(id => id !== currentUser.id);
-                const user = await fetch(`${API_URL}/users/${otherUserId}`).then(res => res.json());
+                const userResponse = await fetch(`${API_URL}/users/${otherUserId}`);
+                const user = await userResponse.json();
                 
                 matchesHtml += `
                     <div class="match-item" onclick="openChat('${user.id}')">
@@ -421,7 +593,8 @@ async function loadMatchesAndConversations() {
             
             let conversationsHtml = '';
             for (const [otherUserId, conv] of uniqueConversations) {
-                const otherUser = await fetch(`${API_URL}/users/${otherUserId}`).then(res => res.json());
+                const userResponse = await fetch(`${API_URL}/users/${otherUserId}`);
+                const otherUser = await userResponse.json();
                 const lastMessage = conv.lastMessage;
                 const unreadCount = conv.unreadCount || 0;
                 
@@ -458,7 +631,8 @@ async function loadMatchesAndConversations() {
 }
 
 async function loadConversations() {
-    const messages = await fetch(`${API_URL}/messages`).then(res => res.json());
+    const messagesResponse = await fetch(`${API_URL}/messages`);
+    const messages = await messagesResponse.json();
     const conversations = {};
     
     messages.forEach(msg => {
@@ -499,7 +673,8 @@ async function loadConversations() {
 }
 
 async function updateUnreadBadge() {
-    const messages = await fetch(`${API_URL}/messages?toUserId=${currentUser.id}&read=false`).then(res => res.json());
+    const messagesResponse = await fetch(`${API_URL}/messages?toUserId=${currentUser.id}&read=false`);
+    const messages = await messagesResponse.json();
     const badge = document.getElementById('unreadBadge');
     
     if (messages.length > 0) {
@@ -512,13 +687,15 @@ async function updateUnreadBadge() {
 
 // ==================== CHAT (PANTALLA COMPLETA) ====================
 async function openChat(userId) {
-    const user = await fetch(`${API_URL}/users/${userId}`).then(res => res.json());
+    const userResponse = await fetch(`${API_URL}/users/${userId}`);
+    const user = await userResponse.json();
     if (!user) return;
     
     currentChatUser = user;
     
     // Marcar mensajes como leídos
-    const messages = await fetch(`${API_URL}/messages?fromUserId=${userId}&toUserId=${currentUser.id}&read=false`).then(res => res.json());
+    const messagesResponse = await fetch(`${API_URL}/messages?fromUserId=${userId}&toUserId=${currentUser.id}&read=false`);
+    const messages = await messagesResponse.json();
     
     for (const msg of messages) {
         await fetch(`${API_URL}/messages/${msg.id}`, {
@@ -561,6 +738,62 @@ async function openChat(userId) {
     }, 300);
 }
 
+async function loadMessages(userId) {
+    const messagesResponse = await fetch(`${API_URL}/messages?fromUserId=${currentUser.id}&toUserId=${userId}`);
+    const messages = await messagesResponse.json();
+    const messagesResponse2 = await fetch(`${API_URL}/messages?fromUserId=${userId}&toUserId=${currentUser.id}`);
+    const messages2 = await messagesResponse2.json();
+    
+    const allMessages = [...messages, ...messages2].sort((a, b) => 
+        new Date(a.timestamp) - new Date(b.timestamp)
+    );
+    
+    const container = document.getElementById('chatMessages');
+    
+    container.innerHTML = allMessages.map(msg => {
+        const isSent = msg.fromUserId === currentUser.id;
+        return `
+            <div class="message ${isSent ? 'sent' : 'received'}">
+                ${msg.text}
+                <div class="message-time">
+                    ${new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    
+    if (!text || !currentChatUser) return;
+    
+    try {
+        await fetch(`${API_URL}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: Date.now().toString(),
+                fromUserId: currentUser.id,
+                toUserId: currentChatUser.id,
+                text,
+                timestamp: new Date().toISOString(),
+                read: false
+            })
+        });
+        
+        await loadMessages(currentChatUser.id);
+        await loadMatchesAndConversations();
+        
+        input.value = '';
+    } catch (error) {
+        console.error('Error sending message:', error);
+    }
+}
+
 function backToMessages() {
     // RESTAURAR EL CHAT A SU ESTADO NORMAL
     const chatSection = document.getElementById('chat-section');
@@ -577,10 +810,173 @@ function backToMessages() {
     loadMatchesAndConversations();
 }
 
-// ==================== RESTO DEL CÓDIGO (IGUAL) ====================
-// ... (el resto de funciones: loadMessages, sendMessage, startMessageCheck, 
-//      previewPublicacionFoto, crearPublicacion, loadPublicaciones, 
-//      showSection, etc. SE QUEDAN IGUAL) ...
+function startMessageCheck() {
+    if (messageCheckInterval) {
+        clearInterval(messageCheckInterval);
+    }
+    
+    messageCheckInterval = setInterval(async () => {
+        if (currentUser) {
+            if (document.getElementById('mensajes-section').style.display === 'block') {
+                await loadMatchesAndConversations();
+            }
+            if (currentChatUser) {
+                await loadMessages(currentChatUser.id);
+            }
+            await updateUnreadBadge();
+        }
+    }, 3000);
+}
+
+// ==================== MURO SOCIAL ====================
+function previewPublicacionFoto(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            publicacionFotoData = e.target.result;
+            const container = document.getElementById('fotoPreviewContainer');
+            const preview = document.getElementById('fotoPreview');
+            preview.src = e.target.result;
+            container.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+async function crearPublicacion() {
+    const texto = document.getElementById('publicacionTexto').value.trim();
+    
+    if (!texto && !publicacionFotoData) {
+        alert('Escribe algo o selecciona una foto');
+        return;
+    }
+
+    try {
+        await fetch(`${API_URL}/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id: Date.now().toString(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userPhoto: currentUser.photo,
+                texto,
+                imagen: publicacionFotoData,
+                fecha: new Date().toISOString(),
+                likes: [],
+                comments: []
+            })
+        });
+        
+        document.getElementById('publicacionTexto').value = '';
+        document.getElementById('fotoPreviewContainer').style.display = 'none';
+        publicacionFotoData = null;
+        document.getElementById('publicacionFoto').value = '';
+        
+        await loadPublicaciones();
+        await loadUserStats();
+        
+    } catch (error) {
+        console.error('Error creating post:', error);
+    }
+}
+
+async function loadPublicaciones() {
+    try {
+        const postsResponse = await fetch(`${API_URL}/posts`);
+        const posts = await postsResponse.json();
+        const matches = await getMatches();
+        
+        // Filtrar publicaciones del usuario y sus matches
+        const filteredPosts = posts.filter(post => 
+            post.userId === currentUser.id || matches.includes(post.userId)
+        ).sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        
+        const container = document.getElementById('publicacionesList');
+        
+        if (filteredPosts.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    <span style="font-size: 48px;">📝</span>
+                    <p>No hay publicaciones aún</p>
+                    <p style="margin-top: 10px;">¡Sé el primero en publicar algo!</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filteredPosts.map(post => `
+            <div class="publicacion-card">
+                <div class="publicacion-header">
+                    <img src="${post.userPhoto || 'https://via.placeholder.com/40'}" class="publicacion-avatar">
+                    <div>
+                        <div class="publicacion-user">${post.userName}</div>
+                        <div class="publicacion-date">${new Date(post.fecha).toLocaleDateString()}</div>
+                    </div>
+                </div>
+                ${post.imagen ? `<img src="${post.imagen}" class="publicacion-imagen">` : ''}
+                ${post.texto ? `<div class="publicacion-texto">${post.texto}</div>` : ''}
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading posts:', error);
+    }
+}
+
+// ==================== NAVEGACIÓN ====================
+function showSection(section) {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+
+    document.getElementById('encuentros-section').style.display = 'none';
+    document.getElementById('muro-section').style.display = 'none';
+    document.getElementById('mensajes-section').style.display = 'none';
+    document.getElementById('perfil-section').style.display = 'none';
+    document.getElementById('chat-section').style.display = 'none';
+
+    if (section === 'encuentros') {
+        document.getElementById('encuentros-section').style.display = 'block';
+        loadCards();
+    } else if (section === 'muro') {
+        document.getElementById('muro-section').style.display = 'block';
+        loadPublicaciones();
+    } else if (section === 'mensajes') {
+        document.getElementById('mensajes-section').style.display = 'block';
+        loadMatchesAndConversations();
+    } else if (section === 'perfil') {
+        document.getElementById('perfil-section').style.display = 'block';
+        loadUserStats();
+    }
+}
+
+// ==================== EVENT LISTENERS ====================
+document.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && document.getElementById('chat-section').style.display === 'block') {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+window.addEventListener('beforeunload', async () => {
+    if (currentUser) {
+        try {
+            await fetch(`${API_URL}/users/${currentUser.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ online: false })
+            });
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    }
+    if (messageCheckInterval) {
+        clearInterval(messageCheckInterval);
+    }
+});
 
 // ==================== EXPORTAR FUNCIONES GLOBALES ====================
 window.showRegister = showRegister;
