@@ -1,8 +1,15 @@
 const jsonServer = require('json-server');
-const server = jsonServer.create();
-const router = jsonServer.router('database.json');
+const path = require('path');
+const express = require('express');
+
+const server = express();
+const router = jsonServer.router(path.join(__dirname, 'database.json'));
 const middlewares = jsonServer.defaults();
 
+// Servir archivos estáticos de la carpeta public
+server.use(express.static(path.join(__dirname, 'public')));
+
+// Middlewares de json-server
 server.use(middlewares);
 server.use(jsonServer.bodyParser);
 
@@ -15,8 +22,10 @@ server.use((req, res, next) => {
     next();
 });
 
-// Endpoint personalizado para matches
-server.get('/matches', (req, res) => {
+// ============ ENDPOINTS PERSONALIZADOS ============
+
+// Endpoint para matches
+server.get('/api/matches', (req, res) => {
     const db = router.db;
     let matches = db.get('matches').value();
     
@@ -29,8 +38,8 @@ server.get('/matches', (req, res) => {
     res.json(matches);
 });
 
-// Endpoint personalizado para likes
-server.get('/likes', (req, res) => {
+// Endpoint para likes
+server.get('/api/likes', (req, res) => {
     const db = router.db;
     let likes = db.get('likes').value();
     
@@ -45,8 +54,8 @@ server.get('/likes', (req, res) => {
     res.json(likes);
 });
 
-// Endpoint personalizado para mensajes
-server.get('/messages', (req, res) => {
+// Endpoint para mensajes
+server.get('/api/messages', (req, res) => {
     const db = router.db;
     let messages = db.get('messages').value();
     
@@ -66,8 +75,8 @@ server.get('/messages', (req, res) => {
     res.json(messages);
 });
 
-// Endpoint para crear match automáticamente
-server.post('/likes', (req, res) => {
+// Endpoint para crear like y verificar match automáticamente
+server.post('/api/likes', (req, res) => {
     const db = router.db;
     const like = req.body;
     
@@ -79,9 +88,10 @@ server.post('/likes', (req, res) => {
         .find(l => l.userId === like.targetUserId && l.targetUserId === like.userId)
         .value();
     
+    let match = null;
     if (reciprocalLike) {
         // Crear match
-        const match = {
+        match = {
             id: Date.now().toString(),
             users: [like.userId, like.targetUserId],
             timestamp: new Date().toISOString()
@@ -89,12 +99,20 @@ server.post('/likes', (req, res) => {
         db.get('matches').push(match).write();
     }
     
-    res.json(like);
+    res.json({ like, match });
 });
 
-server.use(router);
+// Usar las rutas de la API con prefijo /api
+server.use('/api', router);
+
+// Todas las demás rutas redirigen al index.html (para SPA)
+server.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`✅ Servidor Baduu corriendo en http://localhost:${PORT}`);
+    console.log(`✅ Servidor Baduu corriendo en puerto ${PORT}`);
+    console.log(`🌍 API: http://localhost:${PORT}/api`);
+    console.log(`📱 App: http://localhost:${PORT}`);
 });
