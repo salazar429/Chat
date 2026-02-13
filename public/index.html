@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Vips - Una opcion para Cristianos</title>
+    <!-- Para GitHub Pages -->
+    <base href="/">
+    <title>Baduu - Conecta con personas</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -13,8 +15,8 @@
         <!-- SPLASH SCREEN -->
         <div id="splash-screen" class="screen active">
             <div class="splash-content">
-                <h1>💬 VIP</h1>
-                <p>¡En VIP todos somos Cristianos!!</p>
+                <h1>💬 Baduu</h1>
+                <p>Conecta con personas increíbles</p>
                 <div class="loading-spinner"></div>
             </div>
         </div>
@@ -52,6 +54,11 @@
                     <div class="input-group">
                         <label>Contraseña</label>
                         <input type="password" id="regPassword" placeholder="••••••••">
+                    </div>
+                    <div class="input-group">
+                        <label>Código de Referido <span style="color: #f44336;">*</span></label>
+                        <input type="text" id="regReferralCode" placeholder="Código de invitación" value="qwerty">
+                        <small style="color: #666; font-size: 12px;">Código de prueba: qwerty</small>
                     </div>
                     <button class="btn btn-primary" onclick="handleRegister()">Registrarse</button>
                     <button class="btn btn-secondary" onclick="showLogin()">Volver a Login</button>
@@ -186,6 +193,19 @@
                                     <div id="profilePostsCount" class="stat-value">0</div>
                                     <div class="stat-label">Posts</div>
                                 </div>
+                            </div>
+
+                            <!-- CÓDIGO DE REFERIDO -->
+                            <div class="referral-section" style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 12px; width: 100%;">
+                                <h4 style="margin-bottom: 10px; color: #333;">🎁 Código de Referido</h4>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="text" id="referralCode" readonly value="" style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white;">
+                                    <button onclick="copyReferralLink()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 15px; border-radius: 8px; cursor: pointer;">📋</button>
+                                </div>
+                                <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                                    Comparte este código para invitar amigos
+                                </p>
+                                <p id="referralStats" style="margin-top: 5px; font-size: 12px; color: #4CAF50; font-weight: 600;"></p>
                             </div>
                             
                             <button class="btn-logout" onclick="logout()">Cerrar Sesión</button>
