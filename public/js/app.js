@@ -1,5 +1,11 @@
 // ==================== CONFIGURACIÓN ====================
-const API_URL = window.location.origin + '/api';
+// Detectar si estamos en GitHub Pages o en Render
+const BASE_URL = window.location.hostname.includes('github.io') 
+    ? 'https://baduu-app.onrender.com'  // URL de Render
+    : window.location.origin;
+
+const API_URL = BASE_URL + '/api';
+
 let currentUser = null;
 let currentChatUser = null;
 let currentCardIndex = 0;
@@ -11,78 +17,86 @@ let currentCard = null;
 let publicacionFotoData = null;
 let matchUserId = null;
 let messageCheckInterval = null;
-let lastMessageCount = 0;
 let isChatOpen = false;
 
 // ==================== INICIALIZACIÓN ====================
-document.addEventListener('DOMContentLoaded', () => {
-    const isAuthScreen = document.getElementById('auth-screen').classList.contains('active');
-    if (isAuthScreen) {
-        setTimeout(() => {
-            document.getElementById('splash-screen').classList.remove('active');
-            document.getElementById('auth-screen').classList.add('active');
-        }, 2000);
-    } else {
-        checkSession();
+document.addEventListener('DOMContentLoaded', async () => {
+    // Verificar si hay código de referido en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const referralCode = urlParams.get('ref');
+    
+    if (referralCode) {
+        // Guardar en sessionStorage para usarlo en el registro
+        sessionStorage.setItem('pending_referral', referralCode);
     }
-});
-
-// ==================== VERIFICAR SESIÓN ====================
-async function checkSession() {
-    try {
-        const savedUser = localStorage.getItem('baduu_current_user');
-        if (savedUser) {
-            currentUser = JSON.parse(savedUser);
-            const response = await fetch(`${API_URL}/users/${currentUser.id}`);
+    
+    // Verificar si hay sesión guardada
+    const savedUser = localStorage.getItem('baduu_current_user');
+    
+    if (savedUser) {
+        try {
+            const user = JSON.parse(savedUser);
+            // Verificar que el usuario existe en el servidor
+            const response = await fetch(`${API_URL}/users/${user.id}`);
+            
             if (response.ok) {
-                const user = await response.json();
-                currentUser = user;
+                currentUser = await response.json();
+                
+                // Actualizar estado online
                 await fetch(`${API_URL}/users/${currentUser.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ online: true })
                 });
                 
-                setTimeout(() => {
-                    document.getElementById('splash-screen').classList.remove('active');
-                    if (!currentUser.photo) {
-                        document.getElementById('photo-screen').classList.add('active');
-                    } else {
-                        document.getElementById('main-screen').classList.add('active');
-                        loadMainScreen();
-                    }
-                }, 2000);
+                localStorage.setItem('baduu_current_user', JSON.stringify(currentUser));
             } else {
+                // Usuario no existe en servidor, limpiar localStorage
                 localStorage.removeItem('baduu_current_user');
-                setTimeout(() => {
-                    document.getElementById('splash-screen').classList.remove('active');
-                    document.getElementById('auth-screen').classList.add('active');
-                }, 2000);
+                currentUser = null;
+            }
+        } catch (error) {
+            console.error('Error checking session:', error);
+            localStorage.removeItem('baduu_current_user');
+            currentUser = null;
+        }
+    }
+    
+    // Mostrar splash y luego la pantalla correspondiente
+    setTimeout(() => {
+        document.getElementById('splash-screen').classList.remove('active');
+        
+        if (currentUser) {
+            if (!currentUser.photo) {
+                document.getElementById('photo-screen').classList.add('active');
+            } else {
+                document.getElementById('main-screen').classList.add('active');
+                loadMainScreen();
             }
         } else {
-            setTimeout(() => {
-                document.getElementById('splash-screen').classList.remove('active');
-                document.getElementById('auth-screen').classList.add('active');
-            }, 2000);
-        }
-    } catch (error) {
-        console.error('Error checking session:', error);
-        setTimeout(() => {
-            document.getElementById('splash-screen').classList.remove('active');
             document.getElementById('auth-screen').classList.add('active');
-        }, 2000);
-    }
-}
+            // Si hay código de referido pendiente, mostrarlo en el campo
+            const pendingReferral = sessionStorage.getItem('pending_referral');
+            if (pendingReferral) {
+                document.getElementById('regReferralCode').value = pendingReferral;
+            }
+        }
+    }, 2000);
+});
 
 // ==================== AUTENTICACIÓN ====================
 function showRegister() {
-    localStorage.removeItem('baduu_current_user');
-    currentUser = null;
-    
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('registerForm').style.display = 'block';
     document.getElementById('authTitle').textContent = 'Crear Cuenta';
     document.getElementById('authSubtitle').textContent = 'Regístrate para comenzar';
+    
+    // Verificar si hay código de referido pendiente
+    const pendingReferral = sessionStorage.getItem('pending_referral');
+    if (pendingReferral) {
+        document.getElementById('regReferralCode').value = pendingReferral;
+        sessionStorage.removeItem('pending_referral');
+    }
 }
 
 function showLogin() {
@@ -102,11 +116,12 @@ async function handleLogin() {
     }
 
     try {
-        const response = await fetch(`${API_URL}/users?email=${email}&password=${password}`);
+        const response = await fetch(`${API_URL}/users?email=${email}`);
         const users = await response.json();
         
-        if (users.length > 0) {
-            const user = users[0];
+        const user = users.find(u => u.password === password);
+        
+        if (user) {
             currentUser = user;
             
             await fetch(`${API_URL}/users/${user.id}`, {
@@ -138,13 +153,28 @@ async function handleRegister() {
     const name = document.getElementById('regName').value;
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
+    const referralCode = document.getElementById('regReferralCode').value;
 
     if (!name || !email || !password) {
         alert('Por favor completa todos los campos');
         return;
     }
 
+    if (!referralCode) {
+        alert('El código de referido es obligatorio');
+        return;
+    }
+
+    // Verificar código de referido (qwerty o códigos de usuarios)
+    const validReferral = await verifyReferralCode(referralCode);
+    
+    if (!validReferral) {
+        alert('Código de referido inválido');
+        return;
+    }
+
     try {
+        // Verificar si el email ya existe
         const checkResponse = await fetch(`${API_URL}/users?email=${email}`);
         const existingUsers = await checkResponse.json();
         
@@ -153,6 +183,12 @@ async function handleRegister() {
             return;
         }
 
+        // Generar código único para el nuevo usuario
+        const userReferralCode = generateReferralCode(name);
+        
+        // Obtener ID del referidor
+        const referrerId = await getReferrerId(referralCode);
+
         const newUser = {
             id: Date.now().toString(),
             name,
@@ -160,6 +196,9 @@ async function handleRegister() {
             password,
             photo: '',
             online: true,
+            referralCode: userReferralCode,
+            referredBy: referrerId,
+            referrals: [],
             createdAt: new Date().toISOString()
         };
 
@@ -170,6 +209,12 @@ async function handleRegister() {
         });
 
         const user = await response.json();
+        
+        // Actualizar contador de referidos del referidor
+        if (referrerId) {
+            await updateReferralCount(referrerId, user.id);
+        }
+        
         currentUser = user;
         localStorage.setItem('baduu_current_user', JSON.stringify(user));
         
@@ -179,6 +224,64 @@ async function handleRegister() {
         console.error('Error:', error);
         alert('Error al registrar usuario');
     }
+}
+
+// ==================== SISTEMA DE REFERIDOS ====================
+function generateReferralCode(name) {
+    // Generar código único basado en nombre y timestamp
+    const base = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const random = Math.random().toString(36).substring(2, 6);
+    return (base + random).substring(0, 10);
+}
+
+async function verifyReferralCode(code) {
+    if (code === 'qwerty') return true; // Código de prueba
+    
+    // Verificar si es código de algún usuario
+    const response = await fetch(`${API_URL}/users?referralCode=${code}`);
+    const users = await response.json();
+    
+    return users.length > 0;
+}
+
+async function getReferrerId(referralCode) {
+    if (referralCode === 'qwerty') return null; // Código de prueba
+    
+    const response = await fetch(`${API_URL}/users?referralCode=${referralCode}`);
+    const users = await response.json();
+    
+    return users.length > 0 ? users[0].id : null;
+}
+
+async function updateReferralCount(referrerId, newUserId) {
+    const response = await fetch(`${API_URL}/users/${referrerId}`);
+    const referrer = await response.json();
+    
+    const referrals = referrer.referrals || [];
+    referrals.push(newUserId);
+    
+    await fetch(`${API_URL}/users/${referrerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referrals })
+    });
+}
+
+async function getReferralCount(userId) {
+    const response = await fetch(`${API_URL}/users/${userId}`);
+    const user = await response.json();
+    return user.referrals ? user.referrals.length : 0;
+}
+
+function copyReferralLink() {
+    const referralCode = document.getElementById('referralCode').value;
+    const link = `${window.location.origin}${window.location.pathname}?ref=${referralCode}`;
+    
+    navigator.clipboard.writeText(link).then(() => {
+        alert('¡Enlace de invitación copiado!');
+    }).catch(() => {
+        alert('Error al copiar. Código: ' + referralCode);
+    });
 }
 
 // ==================== LOGOUT ====================
@@ -203,11 +306,13 @@ async function logout() {
         currentChatUser = null;
         isChatOpen = false;
         
+        // Resetear formularios
         document.getElementById('loginEmail').value = 'ana@email.com';
         document.getElementById('loginPassword').value = '123456';
         document.getElementById('regName').value = '';
         document.getElementById('regEmail').value = '';
         document.getElementById('regPassword').value = '';
+        document.getElementById('regReferralCode').value = '';
         
         document.getElementById('main-screen').classList.remove('active');
         document.getElementById('photo-screen').classList.remove('active');
@@ -264,6 +369,13 @@ async function loadMainScreen() {
     document.getElementById('profilePhoto').src = currentUser.photo || 'https://via.placeholder.com/150';
     document.getElementById('profileName').textContent = currentUser.name;
     document.getElementById('profileEmail').textContent = currentUser.email;
+    
+    // Mostrar código de referido
+    document.getElementById('referralCode').value = currentUser.referralCode || 'baduu-' + currentUser.id.slice(-4);
+    
+    // Mostrar estadísticas de referidos
+    const referralCount = await getReferralCount(currentUser.id);
+    document.getElementById('referralStats').innerHTML = `👥 ${referralCount} amigos invitados`;
     
     await loadUserStats();
     loadCards();
@@ -663,7 +775,7 @@ async function updateUnreadBadge() {
     }
 }
 
-// ==================== CHAT (PANTALLA COMPLETA) ====================
+// ==================== CHAT ====================
 async function openChat(userId) {
     const userResponse = await fetch(`${API_URL}/users/${userId}`);
     const user = await userResponse.json();
@@ -786,7 +898,7 @@ function backToMessages() {
     loadMatchesAndConversations();
 }
 
-// ==================== VERIFICACIÓN DE MENSAJES OPTIMIZADA ====================
+// ==================== VERIFICACIÓN DE MENSAJES ====================
 function startMessageCheck() {
     if (messageCheckInterval) {
         clearInterval(messageCheckInterval);
@@ -796,32 +908,16 @@ function startMessageCheck() {
         if (!currentUser) return;
         
         try {
-            // SOLO actualizar badge de mensajes no leídos
             await updateUnreadBadge();
             
-            // Si el chat está abierto, SOLO actualizar mensajes, NO recargar toda la conversación
             if (isChatOpen && currentChatUser) {
                 await loadMessages(currentChatUser.id);
-            }
-            
-            // Si estamos en la sección de mensajes, actualizar SOLO el contador de no leídos
-            // NO recargar toda la lista de conversaciones
-            if (document.getElementById('mensajes-section').style.display === 'block') {
-                // Solo actualizar el badge, no recargar todo
-                const messagesResponse = await fetch(`${API_URL}/messages?toUserId=${currentUser.id}&read=false`);
-                const messages = await messagesResponse.json();
-                
-                // Actualizar visualmente los no leídos sin recargar todo
-                document.querySelectorAll('.conversation-item').forEach(item => {
-                    const unreadSpan = item.querySelector('.unread-count');
-                    // Aquí podrías agregar lógica para actualizar sin recargar
-                });
             }
             
         } catch (error) {
             console.error('Error in message check:', error);
         }
-    }, 5000); // Aumentado a 5 segundos para menos parpadeo
+    }, 5000);
 }
 
 function stopMessageCheck() {
@@ -994,3 +1090,4 @@ window.sendMessage = sendMessage;
 window.backToMessages = backToMessages;
 window.closeMatchPopup = closeMatchPopup;
 window.openChatFromMatch = openChatFromMatch;
+window.copyReferralLink = copyReferralLink;
